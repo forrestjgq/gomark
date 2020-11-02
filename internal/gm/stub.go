@@ -1,32 +1,32 @@
 package gm
 
-type command uint8
-type identity uint16
-type mark int32
+type Command uint8
+type Identity uint16
+type Mark int32
 
 const (
-	cmdLock command = iota
+	cmdLock Command = iota
 	cmdNew
 	cmdCancel
 	cmdMark
 )
 
 type stub struct {
-	c   command
-	who identity
-	m   mark
+	c   Command
+	who Identity
+	m   Mark
 }
 
-func (st stub) cmd() command {
+func (st stub) cmd() Command {
 	return st.c
 }
-func (st stub) identity() identity {
+func (st stub) identity() Identity {
 	return st.who
 }
-func (st stub) mark() mark {
+func (st stub) mark() Mark {
 	return st.m
 }
-func makeStub(cmd command, id identity, m mark) stub {
+func makeStub(cmd Command, id Identity, m Mark) stub {
 	return stub{
 		c:   cmd,
 		who: id,
