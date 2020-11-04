@@ -1,12 +1,10 @@
 package gomark
 
-import "github.com/forrestjgq/gomark/internal/gm"
+import (
+	"github.com/forrestjgq/gomark/gmi"
+	"github.com/forrestjgq/gomark/internal/gm"
+)
 
-type Marker interface {
-	Mark(n int32)
-	Cancel()
-}
-
-func NewAdder(name string) Marker {
+func NewAdder(name string) gmi.Marker {
 	return gm.NewAdder(name)
 }

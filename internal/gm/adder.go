@@ -1,14 +1,13 @@
 package gm
 
+import "github.com/forrestjgq/gomark/gmi"
+
 type Adder struct {
-	id     Identity
-	name   string
-	total  int64
-	series *IntSeries
+	id Identity
 }
 
 /********************************************************************************
-                       Implementation of gomark.Marker
+                       Implementation of gmi.Marker
 ********************************************************************************/
 
 // Mark a value
@@ -20,27 +19,17 @@ func (a *Adder) Cancel() {
 	RemoveVariable(a.id)
 }
 
-/********************************************************************************
-                       Implementation of Variable
-********************************************************************************/
-func (a *Adder) Name() string {
-	return a.name
-}
-
-func (a *Adder) Identity() Identity {
-	return a.id
-}
-
-func (a *Adder) Push(n Mark) {
-	a.total += int64(n)
-}
-
 // NewAdder create an adder
-func NewAdder(name string) *Adder {
-	a := &Adder{
-		id:   0,
-		name: name,
-	}
-	a.id = AddVariable(a)
-	return a
+func NewAdder(name string) gmi.Marker {
+	r := NewReducer(name,
+		func(dst, src int64) int64 {
+			return dst + src
+		},
+		func(dst, src int64) int64 {
+			return dst - src
+		})
+	r.id = AddVariable(r)
+
+	adder := &Adder{id: r.id}
+	return adder
 }
