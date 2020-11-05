@@ -6,11 +6,11 @@ import (
 )
 
 type sample struct {
-	value int64
+	value Value
 	ts    time.Time
 }
 type sampleInRange struct {
-	value int64
+	value Value
 	du    time.Duration
 }
 type sampler interface {
@@ -18,8 +18,8 @@ type sampler interface {
 	destroy()
 }
 type reduceable interface {
-	Reset() int64
-	Value() int64
+	Reset() Value
+	GetValue() Value
 	Operators() (op Operator, invOp Operator)
 }
 
@@ -137,7 +137,7 @@ func (rs *ReducerSampler) takeSample() {
 	if _, invOp := rs.r.Operators(); invOp != nil {
 		s.value = rs.r.Reset()
 	} else {
-		s.value = rs.r.Value()
+		s.value = rs.r.GetValue()
 	}
 	s.ts = time.Now()
 	rs.q.push(s)
@@ -171,7 +171,7 @@ func (rs *ReducerSampler) ValueInWindow(window int) *sampleInRange {
 	s.du = latest.ts.Sub(oldest.ts)
 	return &s
 }
-func (rs *ReducerSampler) SamplesInWindow(window int) (ret []int64) {
+func (rs *ReducerSampler) SamplesInWindow(window int) (ret []Value) {
 	if window <= 0 {
 		log.Fatal("invalid window size ", window)
 		return

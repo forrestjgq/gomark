@@ -50,12 +50,14 @@ type DumpOption struct {
 	whiteWildcards string
 	blackWildcards string
 }
+type VarBase struct {
+	name string
+	id   Identity
+}
 type Variable interface {
 	Name() string
 	Identity() Identity
 	Push(v Mark)
-	Reset() int64
-	Value() int64
 	OnExpose()
 	OnSample()
 	Describe(w io.Writer, quote bool)

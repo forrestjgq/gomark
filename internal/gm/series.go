@@ -1,16 +1,21 @@
 package gm
 
+const (
+	SeriesSize = 60 + 60 + 24 + 30
+)
+
 type Trend struct {
 	Label string    `json:"label"`
-	Data  [][]int64 `json:"data"`
+	Data  [][]Value `json:"data"`
 }
 type IntSeries struct {
 	op                        Operator
+	divOp                     OperatorInt
 	second, minute, hour, day int8
-	data                      [60 + 60 + 24 + 30]int64
+	data                      [SeriesSize]Value
 }
 
-func (s *IntSeries) Append(v int64) {
+func (s *IntSeries) Append(v Value) {
 	s.appendSecond(v)
 }
 
@@ -58,10 +63,11 @@ void Series<T, Op>::describe(std::ostream& os,
 }
 
 */
+/*
 func (s *IntSeries) GetTrend() *Trend {
 	t := &Trend{
 		Label: "trend",
-		Data:  make([][]int64, 60+60+30+24),
+		Data:  make([][]Value, 60+60+30+24),
 	}
 
 	secondBegin := int(s.second)
@@ -71,7 +77,7 @@ func (s *IntSeries) GetTrend() *Trend {
 
 	c := int64(0)
 	for i := 0; i < 30; i++ {
-		t.Data[c] = []int64{c, s.getDay(int8((i + dayBegin) % 30))}
+		t.Data[c] = []Value{c, s.getDay(int8((i + dayBegin) % 30))}
 		c++
 	}
 	for i := 0; i < 24; i++ {
@@ -89,34 +95,36 @@ func (s *IntSeries) GetTrend() *Trend {
 
 	return t
 }
-func (s *IntSeries) getSecond(idx int8) int64 {
+
+*/
+func (s *IntSeries) getSecond(idx int8) Value {
 	return s.data[idx]
 }
-func (s *IntSeries) setSecond(idx int8, v int64) {
+func (s *IntSeries) setSecond(idx int8, v Value) {
 	s.data[idx] = v
 }
 
-func (s *IntSeries) getMinute(idx int8) int64 {
+func (s *IntSeries) getMinute(idx int8) Value {
 	return s.data[60+idx]
 }
-func (s *IntSeries) setMinute(idx int8, v int64) {
+func (s *IntSeries) setMinute(idx int8, v Value) {
 	s.data[60+idx] = v
 }
 
-func (s *IntSeries) getHour(idx int8) int64 {
+func (s *IntSeries) getHour(idx int8) Value {
 	return s.data[120+int(idx)]
 }
-func (s *IntSeries) setHour(idx int8, v int64) {
+func (s *IntSeries) setHour(idx int8, v Value) {
 	s.data[120+int(idx)] = v
 }
-func (s *IntSeries) getDay(idx int8) int64 {
+func (s *IntSeries) getDay(idx int8) Value {
 	return s.data[144+int(idx)]
 }
-func (s *IntSeries) setDay(idx int8, v int64) {
+func (s *IntSeries) setDay(idx int8, v Value) {
 	s.data[144+int(idx)] = v
 }
 
-func (s *IntSeries) appendSecond(v int64) {
+func (s *IntSeries) appendSecond(v Value) {
 	s.setSecond(s.second, v)
 	s.second++
 	if s.second >= 60 {
@@ -127,11 +135,11 @@ func (s *IntSeries) appendSecond(v int64) {
 			acc = s.op(acc, s.getSecond(i))
 		}
 
-		m := acc / 60
+		m := s.divOp(acc, 60)
 		s.appendMinute(m)
 	}
 }
-func (s *IntSeries) appendMinute(v int64) {
+func (s *IntSeries) appendMinute(v Value) {
 	s.setMinute(s.minute, v)
 	s.minute++
 	if s.minute >= 60 {
@@ -142,11 +150,11 @@ func (s *IntSeries) appendMinute(v int64) {
 			acc = s.op(acc, s.getMinute(i))
 		}
 
-		m := acc / 60
+		m := s.divOp(acc, 60)
 		s.appendHour(m)
 	}
 }
-func (s *IntSeries) appendHour(v int64) {
+func (s *IntSeries) appendHour(v Value) {
 	s.setHour(s.hour, v)
 	s.hour++
 	if s.hour >= 24 {
@@ -157,11 +165,11 @@ func (s *IntSeries) appendHour(v int64) {
 			acc = s.op(acc, s.getHour(i))
 		}
 
-		m := acc / 24
+		m := s.divOp(acc, 24)
 		s.appendDay(m)
 	}
 }
-func (s *IntSeries) appendDay(v int64) {
+func (s *IntSeries) appendDay(v Value) {
 	s.setDay(s.day, v)
 	s.day++
 	if s.day >= 30 {
@@ -169,13 +177,14 @@ func (s *IntSeries) appendDay(v int64) {
 	}
 }
 
-func NewIntSeries(op Operator) *IntSeries {
-	if op == nil {
+func NewIntSeries(op Operator, divOp OperatorInt) *IntSeries {
+	if op == nil || divOp == nil {
 		return nil
 	}
 
 	return &IntSeries{
-		op:   op,
-		data: [174]int64{},
+		op:    op,
+		divOp: divOp,
+		data:  [SeriesSize]Value{},
 	}
 }

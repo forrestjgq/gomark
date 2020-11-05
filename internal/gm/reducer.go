@@ -6,37 +6,29 @@ import (
 )
 
 type Reducer struct {
-	op, invOp Operator
-	value     int64
-	name      string
-	id        Identity
-	sampler   *ReducerSampler
-	series    *IntSeries
+	op, invOp   Operator
+	seriesDivOp OperatorInt
+	value       Value
+	sampler     *ReducerSampler
+	series      *IntSeries
 }
 
 func (r *Reducer) Operators() (op Operator, invOp Operator) {
-	return op, invOp
-}
-
-func (r *Reducer) Name() string {
-	return r.name
-}
-
-func (r *Reducer) Identity() Identity {
-	return r.id
+	op, invOp = r.op, r.invOp
+	return
 }
 
 func (r *Reducer) Push(v Mark) {
-	r.value = r.op(r.value, int64(v))
+	r.value = r.op(r.value, OneValue(int64(v)))
 }
 
-func (r *Reducer) Value() int64 {
+func (r *Reducer) GetValue() Value {
 	return r.value
 }
 
-func (r *Reducer) Reset() int64 {
+func (r *Reducer) Reset() Value {
 	v := r.value
-	r.value = 0
+	r.value.Reset()
 	return v
 }
 func (r *Reducer) GetWindowSampler() winSampler {
@@ -59,8 +51,8 @@ func (r *Reducer) DescribeSeries(w io.Writer, opt *SeriesOption) error {
 	return nil
 }
 func (r *Reducer) OnExpose() {
-	if r.series == nil && r.invOp != nil && flagSaveSeries {
-		r.series = NewIntSeries(r.op)
+	if r.series == nil && r.invOp != nil && r.seriesDivOp != nil && flagSaveSeries {
+		r.series = NewIntSeries(r.op, r.seriesDivOp)
 	}
 }
 func (r *Reducer) OnSample() {
@@ -68,18 +60,16 @@ func (r *Reducer) OnSample() {
 		r.sampler.takeSample()
 	}
 	if r.series != nil {
-		r.series.Append(r.Value())
+		r.series.Append(r.GetValue())
 	}
 }
 
-func NewReducer(name string, op, invOp Operator) *Reducer {
+func NewReducer(op, invOp Operator, seriesDivOp OperatorInt) *Reducer {
 	r := &Reducer{
-		op:      op,
-		invOp:   invOp,
-		value:   0,
-		name:    name,
-		id:      0,
-		sampler: nil,
+		op:          op,
+		invOp:       invOp,
+		seriesDivOp: seriesDivOp,
+		sampler:     nil,
 	}
 	return r
 }

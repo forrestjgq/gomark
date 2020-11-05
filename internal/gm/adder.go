@@ -1,9 +1,42 @@
 package gm
 
-import "github.com/forrestjgq/gomark/gmi"
+import (
+	"io"
+
+	"github.com/forrestjgq/gomark/gmi"
+)
 
 type Adder struct {
-	id Identity
+	VarBase
+	r *Reducer
+}
+
+func (a *Adder) Name() string {
+	return a.name
+}
+
+func (a *Adder) Identity() Identity {
+	return a.id
+}
+
+func (a *Adder) Push(v Mark) {
+	panic("implement me")
+}
+
+func (a *Adder) OnExpose() {
+	panic("implement me")
+}
+
+func (a *Adder) OnSample() {
+	panic("implement me")
+}
+
+func (a *Adder) Describe(w io.Writer, quote bool) {
+	panic("implement me")
+}
+
+func (a *Adder) DescribeSeries(w io.Writer, opt *SeriesOption) error {
+	panic("implement me")
 }
 
 /********************************************************************************
@@ -21,15 +54,27 @@ func (a *Adder) Cancel() {
 
 // NewAdder create an adder
 func NewAdder(name string) gmi.Marker {
-	r := NewReducer(name,
-		func(dst, src int64) int64 {
-			return dst + src
+	r := NewReducer(
+		func(dst, src Value) Value {
+			return dst.Add(&src)
 		},
-		func(dst, src int64) int64 {
-			return dst - src
+		func(dst, src Value) Value {
+			return dst.Sub(&src)
+		},
+		func(left Value, right int) Value {
+			return Value{
+				x: left.x / int64(right),
+				y: 0,
+			}
 		})
-	r.id = AddVariable(r)
 
-	adder := &Adder{id: r.id}
+	adder := &Adder{
+		VarBase: VarBase{
+			name: name,
+			id:   0,
+		},
+		r: r,
+	}
+	adder.id = AddVariable(adder)
 	return adder
 }

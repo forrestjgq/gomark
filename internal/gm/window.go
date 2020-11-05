@@ -13,16 +13,17 @@ const (
 
 type winSampler interface {
 	SetWindow(window int)
-	SamplesInWindow(window int) []int64
+	SamplesInWindow(window int) []Value
 	ValueInWindow(window int) *sampleInRange
 }
 
 type Window struct {
-	op        Operator
-	sampler   winSampler
-	window    int
-	series    *IntSeries
-	frequency SeriesFrequency
+	op          Operator
+	seriesDivOp OperatorInt
+	sampler     winSampler
+	window      int
+	series      *IntSeries
+	frequency   SeriesFrequency
 }
 
 func (w *Window) Name() string {
@@ -37,13 +38,9 @@ func (w *Window) Push(v Mark) {
 	panic("implement me")
 }
 
-func (w *Window) Reset() int64 {
-	return 0
-}
-
 func (w *Window) OnExpose() {
 	if w.series == nil && flagSaveSeries {
-		w.series = NewIntSeries(w.op)
+		w.series = NewIntSeries(w.op, w.seriesDivOp)
 	}
 }
 
@@ -71,30 +68,32 @@ func (w *Window) GetSpanOf(window int) *sampleInRange {
 func (w *Window) GetSpan() *sampleInRange {
 	return w.sampler.ValueInWindow(w.window)
 }
-func (w *Window) ValueOf(window int) int64 {
+func (w *Window) ValueOf(window int) Value {
 	v := w.GetSpanOf(window)
 	if v != nil {
 		return v.value
 	}
-	return 0
+	return Value{}
 }
-func (w *Window) Value() int64 {
+func (w *Window) Value() Value {
 	return w.ValueOf(w.window)
 }
 func (w *Window) WindowSize() int {
 	return w.window
 }
-func (w *Window) GetSamples() []int64 {
+func (w *Window) GetSamples() []Value {
 	return w.sampler.SamplesInWindow(w.window)
 }
 
-func NewWindow(window int, sampler winSampler, freq SeriesFrequency) *Window {
+func NewWindow(window int, sampler winSampler, freq SeriesFrequency, op Operator, seriesDivOp OperatorInt) *Window {
 	if window <= 0 {
 		panic("window size must > 0")
 	}
 	return &Window{
-		window:    window,
-		frequency: freq,
-		sampler:   sampler,
+		op:          op,
+		seriesDivOp: seriesDivOp,
+		window:      window,
+		frequency:   freq,
+		sampler:     sampler,
 	}
 }
