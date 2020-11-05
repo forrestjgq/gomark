@@ -20,7 +20,7 @@ func (a *Adder) Identity() Identity {
 }
 
 func (a *Adder) Push(v Mark) {
-	panic("implement me")
+	a.r.Push(v)
 }
 
 func (a *Adder) OnExpose() {
