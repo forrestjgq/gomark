@@ -3,6 +3,7 @@ package gm
 import (
 	"fmt"
 	"log"
+	"math"
 	"reflect"
 	"sort"
 
@@ -24,6 +25,14 @@ type PercentileInterval struct {
 	sorted     bool
 }
 
+func (pi *PercentileInterval) CopyFrom(rhs *PercentileInterval) {
+	pi.sampleSize = rhs.sampleSize
+	pi.numAdded = rhs.numAdded
+	pi.numSamples = rhs.numSamples
+	pi.sorted = rhs.sorted
+	pi.samples = make([]uint32, len(rhs.samples))
+	copy(pi.samples, rhs.samples)
+}
 func (pi *PercentileInterval) SampleAt(idx int) uint32 {
 	saved := int(pi.numSamples)
 	if idx > saved {
@@ -167,10 +176,6 @@ func (pi *PercentileInterval) SameOf(rhs *PercentileInterval) bool {
 		reflect.DeepEqual(pi.samples[0:pi.numSamples], rhs.samples[0:rhs.numSamples])
 }
 
-const (
-	NumIntervals = 32
-)
-
 func newPercentileInterval(sampleSize int) *PercentileInterval {
 	return &PercentileInterval{
 		sampleSize: sampleSize,
@@ -178,5 +183,257 @@ func newPercentileInterval(sampleSize int) *PercentileInterval {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+const (
+	NumIntervals = 32
+)
+
+type PercentileSamples struct {
+	sampleSize int
+	numAdded   int
+	intervals  []*PercentileInterval
+}
+
+func (ps *PercentileSamples) DupFrom(rhs *PercentileSamples) {
+	ps.numAdded = rhs.numAdded
+	ps.sampleSize = rhs.sampleSize
+	if ps.intervals == nil {
+		ps.intervals = make([]*PercentileInterval, NumIntervals)
+	}
+	copy(rhs.intervals, ps.intervals)
+}
+func (ps *PercentileSamples) CopyFrom(rhs *PercentileSamples) {
+	ps.numAdded = rhs.numAdded
+	ps.sampleSize = rhs.sampleSize
+	for i, v := range rhs.intervals {
+		if v != nil && !v.Empty() {
+			ps.intervals[i] = &PercentileInterval{}
+			ps.intervals[i].CopyFrom(v)
+		} else {
+			ps.intervals[i] = nil
+		}
+	}
+}
+func (ps *PercentileSamples) TakeFrom(rhs *PercentileSamples) {
+	ps.numAdded = rhs.numAdded
+	for i, v := range rhs.intervals {
+		if v != nil && !v.Empty() {
+			ps.intervals[i] = &PercentileInterval{}
+			ps.intervals[i].CopyFrom(v)
+		} else {
+			ps.intervals[i].Clear()
+		}
+	}
+}
+func (ps *PercentileSamples) Clear() {
+	ps.numAdded = 0
+	for i := range ps.intervals {
+		ps.intervals[i] = nil
+	}
+}
+func (ps *PercentileSamples) Dup() *PercentileSamples {
+	rhs := &PercentileSamples{
+		sampleSize: ps.sampleSize,
+		numAdded:   ps.numAdded,
+		intervals:  make([]*PercentileInterval, NumIntervals),
+	}
+	copy(rhs.intervals, ps.intervals)
+	return rhs
+}
+
+func (ps *PercentileSamples) GetNumber(ratio float64) uint32 {
+	n := int(math.Ceil(ratio * float64(ps.numAdded)))
+	if n > ps.numAdded {
+		n = ps.numAdded
+	} else if n == 0 {
+		return 0
+	}
+	for _, v := range ps.intervals {
+		if v == nil {
+			continue
+		}
+		if n <= int(v.AddedCount()) {
+			samplen := n * int(v.SampleCount()) / int(v.AddedCount())
+			sampleIdx := 0
+			if samplen != 0 {
+				sampleIdx = samplen - 1
+			}
+			return v.SampleAt(sampleIdx)
+		}
+		n -= int(v.AddedCount())
+	}
+	panic("can not reach here")
+}
+func (ps *PercentileSamples) Merge(rhs *PercentileSamples) {
+	ps.numAdded += rhs.numAdded
+	for i, v := range rhs.intervals {
+		if v != nil && !v.Empty() {
+			if ps.intervals[i] == nil {
+				ps.intervals[i] = newPercentileInterval(ps.sampleSize)
+			}
+			ps.intervals[i].Merge(v)
+		}
+	}
+}
+func (ps *PercentileSamples) IntervalOf(idx int) *PercentileInterval {
+	if ps.intervals[idx] == nil {
+		ps.intervals[idx] = newPercentileInterval(idx)
+	}
+	return ps.intervals[idx]
+}
+func (ps *PercentileSamples) CombineOf(many []*PercentileSamples) {
+	if ps.numAdded != 0 {
+		for _, v := range ps.intervals {
+			v.Clear()
+		}
+		ps.numAdded = 0
+	}
+
+	for _, v := range many {
+		ps.numAdded += v.numAdded
+	}
+
+	for i := 0; i < NumIntervals; i++ {
+		total, totalSample := 0, 0
+		for _, v := range many {
+			if v.intervals[i] != nil {
+				total += int(v.intervals[i].AddedCount())
+				totalSample += int(v.intervals[i].SampleCount())
+			}
+		}
+		if total == 0 {
+			continue
+		}
+
+		for _, v := range many {
+			vi := v.intervals[i]
+			if vi == nil || vi.Empty() {
+				continue
+			}
+
+			invl := &PercentileInterval{}
+			invl.CopyFrom(vi)
+			if total <= ps.sampleSize {
+				ps.IntervalOf(i).MergeWithExpectation(invl, invl.SampleCount())
+				continue
+			}
+
+			b := int(invl.AddedCount())
+			remain := roundOfExpectation(uint(b*ps.sampleSize), uint(total))
+			if remain > uint(invl.sampleSize) {
+				remain = uint(invl.sampleSize)
+			}
+			ps.IntervalOf(i).MergeWithExpectation(invl, uint16(remain))
+		}
+	}
+}
+func NewPercentileSamples(sampleSize int) *PercentileSamples {
+	return &PercentileSamples{
+		sampleSize: sampleSize,
+		numAdded:   0,
+		intervals:  make([]*PercentileInterval, NumIntervals),
+	}
+}
+
+const (
+	GlobalPercentileSamplesSize      = 254
+	ThreadLocalPercentileSamplesSize = 30
+)
+
 type Percentile struct {
+	sampler *PercentileReducerSampler
+	value   *PercentileSamples
+	local   *PercentileSamples
+}
+
+func ones32(x uint32) uint32 {
+	/* 32-bit recursive reduction using SWAR...
+	 * but first step is mapping 2-bit values
+	 * into sum of 2 1-bit values in sneaky way
+	 */
+	x -= (x >> 1) & 0x55555555
+	x = ((x >> 2) & 0x33333333) + (x & 0x33333333)
+	x = ((x >> 4) + x) & 0x0f0f0f0f
+	x += x >> 8
+	x += x >> 16
+	return x & 0x0000003f
+}
+
+func log2(x uint32) uint32 {
+	y := int32(x & (x - 1))
+	y |= -y
+	y >>= 31
+	x |= x >> 1
+	x |= x >> 2
+	x |= x >> 4
+	x |= x >> 8
+	x |= x >> 16
+	return ones32(x) - 1 - uint32(y)
+}
+
+func (p *Percentile) intervalIdx(v Mark) (latency int64, idx int) {
+	latency = int64(v)
+	idx = 0
+	if v < 0 {
+		latency = 0
+		return
+	}
+
+	if v <= 2 {
+		return
+	}
+	idx = int(log2(uint32(latency)) - 1)
+	return
+}
+func (p *Percentile) Push(v Mark) {
+	latency, idx := p.intervalIdx(v)
+	interval := p.local.IntervalOf(idx)
+	if interval.Full() {
+		p.value.IntervalOf(idx).Merge(interval)
+		p.value.numAdded += int(interval.numAdded)
+		p.local.numAdded -= int(interval.AddedCount())
+		interval.Clear()
+	}
+	interval.Add64(latency)
+	p.local.numAdded++
+}
+func (p *Percentile) Reset() *PercentileSamples {
+	ret := p.value.Dup()
+	ret.Merge(p.local)
+	p.value.Clear()
+	p.local.Clear()
+	return ret
+}
+
+func (p *Percentile) GetValue() *PercentileSamples {
+	ret := p.value.Dup()
+	ret.Merge(p.local)
+	return ret
+}
+
+func (p *Percentile) Operators() (op PercentileOperator, invOp PercentileOperator) {
+	op = func(left, right *PercentileSamples) {
+		left.Merge(right)
+	}
+	invOp = nil
+	return
+}
+
+func (p *Percentile) GetWindowSampler() PercentileWinSampler {
+	if p.sampler == nil {
+		p.sampler = NewPercentileReducerSampler(p)
+	}
+	return p.sampler
+}
+
+func NewPercentile() *Percentile {
+	p := &Percentile{
+		sampler: nil,
+		value:   NewPercentileSamples(GlobalPercentileSamplesSize),
+		local:   NewPercentileSamples(ThreadLocalPercentileSamplesSize),
+	}
+	return p
 }
