@@ -47,7 +47,7 @@ func NewMaxer(name string) *Maxer {
 			return src
 		},
 		nil,
-		nil)
+		nil) // reducer do not create series sampler if invOp is nil
 
 	maxer := &Maxer{
 		VarBase: VarBase{
@@ -56,6 +56,8 @@ func NewMaxer(name string) *Maxer {
 		},
 		r: r,
 	}
-	maxer.id = AddVariable(maxer)
+	if len(name) != 0 {
+		maxer.id = AddVariable(maxer)
+	}
 	return maxer
 }

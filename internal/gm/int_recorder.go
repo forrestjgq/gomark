@@ -85,7 +85,7 @@ func (ir *IntRecorder) GetWindowSampler() winSampler {
 	}
 	return ir.sampler
 }
-func NewIntRecorder() Variable {
+func NewIntRecorder() *IntRecorder {
 	ir := &IntRecorder{
 		VarBase: VarBase{},
 		op: func(left, right Value) Value {
@@ -97,6 +97,5 @@ func NewIntRecorder() Variable {
 		value:   Value{},
 		sampler: nil,
 	}
-	ir.id = AddVariable(ir)
 	return ir
 }

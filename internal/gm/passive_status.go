@@ -73,6 +73,12 @@ func (p *PassiveStatus) GetWindowSampler() winSampler {
 	}
 	return p.sampler
 }
-func NewPassiveStatus(callback PassiveCallback) Variable {
-	return &PassiveStatus{}
+func NewPassiveStatus(callback PassiveCallback, op, invOp Operator, divOp OperatorInt) *PassiveStatus {
+	return &PassiveStatus{
+		VarBase:     VarBase{},
+		op:          op,
+		invOp:       invOp,
+		seriesDivOp: divOp,
+		callback:    callback,
+	}
 }

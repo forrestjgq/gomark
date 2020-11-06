@@ -87,7 +87,7 @@ func (w *Window) GetSamples() []Value {
 
 func NewWindow(window int, sampler winSampler, freq SeriesFrequency, op Operator, seriesDivOp OperatorInt) *Window {
 	if window <= 0 {
-		panic("window size must > 0")
+		window = defaultDumpInterval
 	}
 	return &Window{
 		op:          op,
