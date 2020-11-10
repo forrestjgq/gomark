@@ -1,12 +1,18 @@
 package gm
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 const (
 	SeriesSize = 60 + 60 + 24 + 30
 )
 
 type Trend struct {
-	Label string    `json:"label"`
-	Data  [][]Value `json:"data"`
+	Label string  `json:"label"`
+	Data  []Value `json:"data"`
 }
 type IntSeries struct {
 	op                        Operator
@@ -19,55 +25,10 @@ func (s *IntSeries) Append(v Value) {
 	s.appendSecond(v)
 }
 
-/**
-template <typename T, typename Op>
-void Series<T, Op>::describe(std::ostream& os,
-                             const std::string* vector_names) const {
-    CHECK(vector_names == NULL);
-    pthread_mutex_lock(&this->_mutex);
-    const int second_begin = this->_nsecond;
-    const int minute_begin = this->_nminute;
-    const int hour_begin = this->_nhour;
-    const int day_begin = this->_nday;
-    // NOTE: we don't save _data which may be inconsistent sometimes, but
-    // this output is generally for "peeking the trend" and does not need
-    // to exactly accurate.
-    pthread_mutex_unlock(&this->_mutex);
-    int c = 0;
-    os << "{\"label\":\"trend\",\"data\":[";
-    for (int i = 0; i < 30; ++i, ++c) {
-        if (c) {
-            os << ',';
-        }
-        os << '[' << c << ',' << this->_data.day((i + day_begin) % 30) << ']';
-    }
-    for (int i = 0; i < 24; ++i, ++c) {
-        if (c) {
-            os << ',';
-        }
-        os << '[' << c << ',' << this->_data.hour((i + hour_begin) % 24) << ']';
-    }
-    for (int i = 0; i < 60; ++i, ++c) {
-        if (c) {
-            os << ',';
-        }
-        os << '[' << c << ',' << this->_data.minute((i + minute_begin) % 60) << ']';
-    }
-    for (int i = 0; i < 60; ++i, ++c) {
-        if (c) {
-            os << ',';
-        }
-        os << '[' << c << ',' << this->_data.second((i + second_begin) % 60) << ']';
-    }
-    os << "]}";
-}
-
-*/
-/*
 func (s *IntSeries) GetTrend() *Trend {
 	t := &Trend{
 		Label: "trend",
-		Data:  make([][]Value, 60+60+30+24),
+		Data:  make([]Value, SeriesSize),
 	}
 
 	secondBegin := int(s.second)
@@ -77,26 +38,58 @@ func (s *IntSeries) GetTrend() *Trend {
 
 	c := int64(0)
 	for i := 0; i < 30; i++ {
-		t.Data[c] = []Value{c, s.getDay(int8((i + dayBegin) % 30))}
+		t.Data[c] = s.getDay(int8((i + dayBegin) % 30))
 		c++
 	}
 	for i := 0; i < 24; i++ {
-		t.Data[c] = []int64{c, s.getHour(int8((i + hourBegin) % 24))}
+		t.Data[c] = s.getHour(int8((i + hourBegin) % 24))
 		c++
 	}
 	for i := 0; i < 60; i++ {
-		t.Data[c] = []int64{c, s.getMinute(int8((i + minuteBegin) % 60))}
+		t.Data[c] = s.getMinute(int8((i + minuteBegin) % 60))
 		c++
 	}
 	for i := 0; i < 60; i++ {
-		t.Data[c] = []int64{c, s.getSecond(int8((i + secondBegin) % 60))}
+		t.Data[c] = s.getSecond(int8((i + secondBegin) % 60))
 		c++
 	}
 
 	return t
 }
+func (s *IntSeries) Describe(w io.StringWriter, splitName []string, cvt func(v Value, idx int) int) {
+	t := s.GetTrend()
+	if splitName == nil {
+		_, _ = w.WriteString("{\"label\":\"trend\",\"data\":[")
+		for i, v := range t.Data {
+			if i > 0 {
+				_, _ = w.WriteString(",")
+			}
+			_, _ = w.WriteString(fmt.Sprintf("[%d,%d]", i, cvt(v, 0)))
+		}
+		_, _ = w.WriteString("]}")
+	} else {
+		_, _ = w.WriteString("[")
+		for j, s := range splitName {
+			if j > 0 {
+				_, _ = w.WriteString(",")
+			}
+			name := s
+			if len(name) == 0 {
+				name = "Vector[" + strconv.Itoa(j) + "]"
+			}
+			_, _ = w.WriteString(fmt.Sprintf("{\"label\":\"%s\",\"data\":[", name))
+			for i, v := range t.Data {
+				if i > 0 {
+					_, _ = w.WriteString(",")
+				}
+				_, _ = w.WriteString(fmt.Sprintf("[%d,%d]", i, cvt(v, 0)))
+			}
+			_, _ = w.WriteString("]}")
+		}
+		_, _ = w.WriteString("]")
+	}
+}
 
-*/
 func (s *IntSeries) getSecond(idx int8) Value {
 	return s.data[idx]
 }

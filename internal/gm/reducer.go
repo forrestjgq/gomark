@@ -37,17 +37,18 @@ func (r *Reducer) GetWindowSampler() winSampler {
 	}
 	return r.sampler
 }
-func (r *Reducer) Describe(w io.Writer, quote bool) {
-	// see reducer.h, Reducer::describe
-	panic("not implemented")
+func (r *Reducer) Describe(w io.StringWriter, serial func(v Value) string) {
+	_, _ = w.WriteString(serial(r.GetValue()))
 }
-func (r *Reducer) DescribeSeries(w io.Writer, opt *SeriesOption) error {
+func (r *Reducer) DescribeSeries(w io.StringWriter, opt *SeriesOption, splitName []string, cvt func(v Value, idx int) int) error {
 	// see reducer.h, Reducer::describe_series
 	if r.sampler == nil {
 		return errors.New("sampler is not created")
 	}
 
-	panic("not implemented")
+	if !opt.testOnly {
+		r.series.Describe(w, splitName, cvt)
+	}
 	return nil
 }
 func (r *Reducer) OnExpose() {

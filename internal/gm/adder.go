@@ -2,6 +2,7 @@ package gm
 
 import (
 	"io"
+	"strconv"
 
 	"github.com/forrestjgq/gomark/gmi"
 )
@@ -15,10 +16,10 @@ func (a *Adder) VarBase() *VarBase {
 	return a.vb
 }
 
-func (a *Adder) Expose(prefix, name string, displayFilter DisplayFilter) error {
-	var err error
-	a.vb, err = AddVariable("", name, DisplayOnAll, a)
-	return err
+func (a *Adder) OnExpose(vb *VarBase) error {
+	a.vb = vb
+	a.r.OnExpose()
+	return nil
 }
 
 func (a *Adder) Dispose() {
@@ -30,15 +31,19 @@ func (a *Adder) Push(v Mark) {
 }
 
 func (a *Adder) OnSample() {
-	panic("implement me")
+	a.r.OnSample()
 }
 
-func (a *Adder) Describe(w io.Writer, quote bool) {
-	panic("implement me")
+func (a *Adder) Describe(w io.StringWriter, _ bool) {
+	a.r.Describe(w, func(v Value) string {
+		return strconv.Itoa(int(v.x))
+	})
 }
 
-func (a *Adder) DescribeSeries(w io.Writer, opt *SeriesOption) error {
-	panic("implement me")
+func (a *Adder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
+	return a.r.DescribeSeries(w, opt, nil, func(v Value, idx int) int {
+		return int(v.x)
+	})
 }
 
 /********************************************************************************
@@ -68,18 +73,19 @@ func NewAdder(name string) (gmi.Marker, error) {
 			return dst.Sub(&src)
 		},
 		func(left Value, right int) Value {
-			return Value{
-				x: left.x / int64(right),
-				y: 0,
+			var v Value
+			if right == 0 {
+				return v
 			}
+			v.x = left.x / int64(right)
+			return v
 		})
 
 	adder := &Adder{
 		r: r,
 	}
 
-	defer Lock().Unlock()
-	err := adder.Expose("", name, DisplayOnAll)
+	err := AddVariable("", name, DisplayOnAll, adder)
 	if err != nil {
 		return nil, err
 	}
