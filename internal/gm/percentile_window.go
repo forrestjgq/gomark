@@ -1,9 +1,5 @@
 package gm
 
-import (
-	"io"
-)
-
 type PercentileWinSampler interface {
 	SetWindow(window int)
 	SamplesInWindow(window int) []*PercentileSamples
@@ -30,6 +26,14 @@ func (w *PercentileWindow) Identity() Identity {
 func (w *PercentileWindow) Push(v Mark) {
 	panic("implement me")
 }
+func (w *PercentileWindow) Dispose() []Identity {
+	w.series = nil
+	w.sampler = nil
+	w.op = nil
+	w.seriesDivOp = nil
+	w.window = 0
+	return nil
+}
 
 func (w *PercentileWindow) OnExpose() {
 	// todo
@@ -46,14 +50,6 @@ func (w *PercentileWindow) OnSample() {
 			w.series.Append(w.Value())
 		}
 	}
-}
-
-func (w *PercentileWindow) Describe(wr io.Writer, quote bool) {
-	panic("implement me")
-}
-
-func (w *PercentileWindow) DescribeSeries(wr io.Writer, opt *SeriesOption) error {
-	panic("implement me")
 }
 
 func (w *PercentileWindow) GetSpanOf(window int) *PercentileSampleInRange {

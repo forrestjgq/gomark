@@ -30,6 +30,12 @@ type Window struct {
 	converter   ValueConverter
 }
 
+func (w *Window) Dispose() []Identity {
+	w.sampler = nil
+	w.series = nil
+	return nil
+}
+
 func (w *Window) VarBase() *VarBase {
 	return w.vb
 }
@@ -40,14 +46,6 @@ func (w *Window) OnExpose(vb *VarBase) error {
 		w.series = NewIntSeries(w.op, w.seriesDivOp)
 	}
 	return nil
-}
-
-func (w *Window) Name() string {
-	panic("implement me")
-}
-
-func (w *Window) Identity() Identity {
-	panic("implement me")
 }
 
 func (w *Window) Push(v Mark) {

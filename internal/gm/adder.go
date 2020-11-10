@@ -22,8 +22,9 @@ func (a *Adder) OnExpose(vb *VarBase) error {
 	return nil
 }
 
-func (a *Adder) Dispose() {
-	panic("implement me")
+func (a *Adder) Dispose() []Identity {
+	a.r = nil
+	return nil
 }
 
 func (a *Adder) Push(v Mark) {
@@ -53,7 +54,7 @@ func (a *Adder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 // Mark a value
 func (a *Adder) Mark(n int32) {
 	if a.vb != nil && a.vb.Valid() {
-		s := makeStub(cmdMark, a.vb.ID(), Mark(n))
+		s := makeStub(a.vb.ID(), Mark(n))
 		PushStub(s)
 	}
 }

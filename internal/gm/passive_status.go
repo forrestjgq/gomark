@@ -20,6 +20,12 @@ type PassiveStatus struct {
 	converter  ValueConverter
 }
 
+func (p *PassiveStatus) Dispose() []Identity {
+	p.sampler = nil
+	p.series = nil
+	return nil
+}
+
 func (p *PassiveStatus) VarBase() *VarBase {
 	return p.vb
 }

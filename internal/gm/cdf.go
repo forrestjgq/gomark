@@ -11,6 +11,11 @@ type CDF struct {
 	w  *PercentileWindow
 }
 
+func (c *CDF) Dispose() []Identity {
+	c.w = nil
+	return nil
+}
+
 func (c *CDF) VarBase() *VarBase {
 	return c.vb
 }

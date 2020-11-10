@@ -75,7 +75,8 @@ type Variable interface {
 	Push(v Mark)
 	// OnExpose is called inside server after variable is registered
 	OnExpose(vb *VarBase) error
-	//Dispose()
+	// Notify variable to dispose, and return all child variables that need to be removed
+	Dispose() []Identity
 	OnSample()
 	Describe(w io.StringWriter, quote bool)
 	DescribeSeries(w io.StringWriter, opt *SeriesOption) error

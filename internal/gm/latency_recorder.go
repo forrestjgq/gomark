@@ -25,6 +25,28 @@ type LatencyRecorder struct {
 	latencyP9999            *PassiveStatus
 	latencyPercentiles      *PassiveStatus
 	latencyCdf              *CDF
+	child                   []Identity
+}
+
+func (lr *LatencyRecorder) Dispose() []Identity {
+	lr.latency = nil
+	lr.maxLatency = nil
+	lr.latencyPercentile = nil
+	lr.latencyWindow = nil
+	lr.count = nil
+	lr.qps = nil
+	lr.latencyPercentileWindow = nil
+	lr.latencyP1 = nil
+	lr.latencyP2 = nil
+	lr.latencyP3 = nil
+	lr.latencyP999 = nil
+	lr.latencyP9999 = nil
+	lr.latencyPercentiles = nil
+	lr.latencyCdf = nil
+	c := lr.child
+	lr.child = nil
+	return c
+
 }
 
 func (lr *LatencyRecorder) VarBase() *VarBase {
@@ -39,36 +61,58 @@ func (lr *LatencyRecorder) OnExpose(vb *VarBase) error {
 	if err = Expose(name, "latency", DisplayOnAll, lr.latencyWindow); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyWindow.VarBase().ID())
+
 	if err = Expose(name, "max_latency", DisplayOnAll, lr.maxLatencyWindow); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.maxLatencyWindow.VarBase().ID())
+
 	if err = Expose(name, "count", DisplayOnAll, lr.count); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.count.VarBase().ID())
+
 	if err = Expose(name, "qps", DisplayOnAll, lr.qps); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.qps.VarBase().ID())
+
 	if err = Expose(name, "latency_"+strconv.Itoa(int(varLatencyP1)), DisplayOnPlainText, lr.latencyP1); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyP1.VarBase().ID())
+
 	if err = Expose(name, "latency_"+strconv.Itoa(int(varLatencyP2)), DisplayOnPlainText, lr.latencyP2); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyP2.VarBase().ID())
+
 	if err = Expose(name, "latency_"+strconv.Itoa(int(varLatencyP3)), DisplayOnPlainText, lr.latencyP3); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyP3.VarBase().ID())
+
 	if err = Expose(name, "latency_999", DisplayOnPlainText, lr.latencyP999); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyP999.VarBase().ID())
+
 	if err = Expose(name, "latency_9999", DisplayOnAll, lr.latencyP9999); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyP9999.VarBase().ID())
+
 	if err = Expose(name, "latency_cdf", DisplayOnHTML, lr.latencyCdf); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyCdf.VarBase().ID())
+
 	if err = Expose(name, "latency_percentiles", DisplayOnHTML, lr.latencyPercentiles); err != nil {
 		return err
 	}
+	lr.child = append(lr.child, lr.latencyPercentiles.VarBase().ID())
+
 	names := []string{
 		strconv.Itoa(int(varLatencyP1)) + "%",
 		strconv.Itoa(int(varLatencyP2)) + "%",
@@ -82,11 +126,11 @@ func (lr *LatencyRecorder) OnExpose(vb *VarBase) error {
 func (lr *LatencyRecorder) OnSample() {
 }
 
-func (lr *LatencyRecorder) Describe(w io.StringWriter, quote bool) {
+func (lr *LatencyRecorder) Describe(_ io.StringWriter, _ bool) {
 	panic("LatencyRecorder should not be described")
 }
 
-func (lr *LatencyRecorder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
+func (lr *LatencyRecorder) DescribeSeries(_ io.StringWriter, _ *SeriesOption) error {
 	panic("LatencyRecorder should not be described")
 }
 
@@ -137,7 +181,7 @@ func (lr *LatencyRecorder) LatencyPercentile(ratio float64) int64 {
 	return int64(cb.GetNumber(ratio))
 }
 func (lr *LatencyRecorder) LatencyName() string {
-	return lr.latencyWindow.Name()
+	return lr.latencyWindow.VarBase().Name()
 }
 
 func (lr *LatencyRecorder) LatencyPercentilesName() string {
@@ -147,7 +191,7 @@ func (lr *LatencyRecorder) LatencyCDFName() string {
 	return lr.latencyCdf.VarBase().name
 }
 func (lr *LatencyRecorder) MaxLatencyName() string {
-	return lr.maxLatencyWindow.Name()
+	return lr.maxLatencyWindow.VarBase().Name()
 }
 func (lr *LatencyRecorder) CountName() string {
 	return lr.count.VarBase().name

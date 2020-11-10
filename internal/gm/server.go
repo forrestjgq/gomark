@@ -14,7 +14,6 @@ type server struct {
 	seq   Identity
 	stubc chan stub
 	callc chan func()
-	wg    sync.WaitGroup
 	all   map[Identity]Variable
 }
 
@@ -24,20 +23,9 @@ func init() {
 	srv = &server{
 		stubc: make(chan stub, sizeOfQ),
 		callc: make(chan func()),
-		wg:    sync.WaitGroup{},
 		all:   make(map[Identity]Variable),
 	}
 	go srv.run()
-}
-func (s *server) Unlock1() {
-	s.wg.Done()
-}
-func Lock() interface {
-	Unlock1()
-} {
-	srv.wg.Add(1)
-	srv.stubc <- makeStub(cmdLock, 0, 0)
-	return srv
 }
 
 func (s *server) run() {
@@ -46,33 +34,29 @@ func (s *server) run() {
 		case f := <-s.callc:
 			f()
 		case rx := <-s.stubc:
-			switch rx.cmd() {
-			case cmdLock:
-				s.wg.Wait()
-			case cmdNew:
-				s.newStub(rx)
-			case cmdCancel:
-				s.removeStub(rx)
-			case cmdMark:
-				s.markStub(rx)
-			}
-
+			s.markStub(rx)
 		}
 	}
 }
-func (s *server) newStub(stub stub) {
-}
-func (s *server) removeStub(stub stub) {
-}
 func (s *server) markStub(stub stub) {
+	if v, ok := srv.all[stub.identity()]; ok {
+		v.Push(stub.mark())
+	}
 }
 func (s *server) remove(id Identity) {
-
+	if v, ok := srv.all[id]; ok {
+		ids := v.Dispose()
+		for _, sub := range ids {
+			s.remove(sub)
+		}
+		delete(srv.all, id)
+	}
 }
 func (s *server) add(v Variable) Identity {
 	for {
 		srv.seq++
 		if _, ok := srv.all[srv.seq]; !ok && srv.seq != 0 {
+			srv.all[srv.seq] = v
 			return srv.seq
 		}
 	}
@@ -140,14 +124,6 @@ func AddVariable(prefix, name string, displayFilter DisplayFilter, v Variable) e
 func RemoveVariable(id Identity) {
 	f := func() {
 		srv.remove(id)
-	}
-	callFunc(f)
-}
-func RemoveVariables(ids ...Identity) {
-	f := func() {
-		for _, id := range ids {
-			srv.remove(id)
-		}
 	}
 	callFunc(f)
 }
