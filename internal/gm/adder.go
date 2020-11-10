@@ -41,8 +41,8 @@ func (a *Adder) Describe(w io.StringWriter, _ bool) {
 }
 
 func (a *Adder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
-	return a.r.DescribeSeries(w, opt, nil, func(v Value, idx int) int {
-		return int(v.x)
+	return a.r.DescribeSeries(w, opt, nil, func(v Value, idx int) string {
+		return strconv.Itoa(int(v.x))
 	})
 }
 

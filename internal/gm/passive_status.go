@@ -11,9 +11,13 @@ type PassiveStatus struct {
 	vb          *VarBase
 	op, invOp   Operator
 	seriesDivOp OperatorInt
-	callback    PassiveCallback
-	sampler     *ReducerSampler
-	series      *IntSeries
+
+	callback   PassiveCallback
+	sampler    *ReducerSampler
+	series     *IntSeries
+	names      []string
+	serializer ValueSerializer
+	converter  ValueConverter
 }
 
 func (p *PassiveStatus) VarBase() *VarBase {
@@ -25,7 +29,7 @@ func (p *PassiveStatus) Operators() (op Operator, invOp Operator) {
 	return
 }
 
-func (p *PassiveStatus) Push(v Mark) {
+func (p *PassiveStatus) Push(_ Mark) {
 	panic("PassiveStatus should never be pushing with a mark")
 }
 
@@ -45,15 +49,22 @@ func (p *PassiveStatus) OnSample() {
 	}
 }
 
-func (p *PassiveStatus) Describe(w io.Writer, quote bool) {
-	panic("implement me")
+func (p *PassiveStatus) SetDescriber(serial ValueSerializer, cvt ValueConverter) {
+	p.serializer = serial
+	p.converter = cvt
+}
+func (p *PassiveStatus) Describe(w io.StringWriter, _ bool) {
+	_, _ = w.WriteString(p.serializer(p.GetValue()))
 }
 
-func (p *PassiveStatus) DescribeSeries(w io.Writer, opt *SeriesOption) error {
+func (p *PassiveStatus) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 	if p.series == nil {
 		return errors.New("no series defined")
 	}
-	panic("implement me")
+	if !opt.testOnly {
+		p.series.Describe(w, p.names, p.converter)
+	}
+	return nil
 }
 
 func (p *PassiveStatus) GetValue() Value {
@@ -71,9 +82,8 @@ func (p *PassiveStatus) GetWindowSampler() winSampler {
 	return p.sampler
 }
 
-func (p *PassiveStatus) SetVectorNames(sprintf string) {
-	// todo:
-	panic("impl me")
+func (p *PassiveStatus) SetVectorNames(names []string) {
+	p.names = names
 }
 func NewPassiveStatus(callback PassiveCallback, op, invOp Operator, divOp OperatorInt) *PassiveStatus {
 	return &PassiveStatus{

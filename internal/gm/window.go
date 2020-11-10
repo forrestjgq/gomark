@@ -1,6 +1,7 @@
 package gm
 
 import (
+	"errors"
 	"io"
 )
 
@@ -25,6 +26,8 @@ type Window struct {
 	window      int
 	series      *IntSeries
 	frequency   SeriesFrequency
+	serializer  ValueSerializer
+	converter   ValueConverter
 }
 
 func (w *Window) VarBase() *VarBase {
@@ -61,14 +64,23 @@ func (w *Window) OnSample() {
 	}
 }
 
-func (w *Window) Describe(wr io.Writer, quote bool) {
-	panic("implement me")
+func (w *Window) SetDescriber(serial ValueSerializer, cvt ValueConverter) {
+	w.serializer = serial
+	w.converter = cvt
+}
+func (w *Window) Describe(sw io.StringWriter, _ bool) {
+	_, _ = sw.WriteString(w.serializer(w.Value()))
 }
 
-func (w *Window) DescribeSeries(wr io.Writer, opt *SeriesOption) error {
-	panic("implement me")
+func (w *Window) DescribeSeries(sw io.StringWriter, opt *SeriesOption) error {
+	if w.series == nil {
+		return errors.New("no series defined")
+	}
+	if !opt.testOnly {
+		w.series.Describe(sw, nil, w.converter)
+	}
+	return nil
 }
-
 func (w *Window) GetSpanOf(window int) *sampleInRange {
 	return w.sampler.ValueInWindow(window)
 }

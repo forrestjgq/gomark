@@ -20,6 +20,7 @@ type IntSeries struct {
 	second, minute, hour, day int8
 	data                      [SeriesSize]Value
 }
+type ValueConverter func(v Value, idx int) string
 
 func (s *IntSeries) Append(v Value) {
 	s.appendSecond(v)
@@ -56,7 +57,7 @@ func (s *IntSeries) GetTrend() *Trend {
 
 	return t
 }
-func (s *IntSeries) Describe(w io.StringWriter, splitName []string, cvt func(v Value, idx int) int) {
+func (s *IntSeries) Describe(w io.StringWriter, splitName []string, cvt ValueConverter) {
 	t := s.GetTrend()
 	if splitName == nil {
 		_, _ = w.WriteString("{\"label\":\"trend\",\"data\":[")
@@ -64,7 +65,7 @@ func (s *IntSeries) Describe(w io.StringWriter, splitName []string, cvt func(v V
 			if i > 0 {
 				_, _ = w.WriteString(",")
 			}
-			_, _ = w.WriteString(fmt.Sprintf("[%d,%d]", i, cvt(v, 0)))
+			_, _ = w.WriteString(fmt.Sprintf("[%d,%s]", i, cvt(v, 0)))
 		}
 		_, _ = w.WriteString("]}")
 	} else {
@@ -82,7 +83,7 @@ func (s *IntSeries) Describe(w io.StringWriter, splitName []string, cvt func(v V
 				if i > 0 {
 					_, _ = w.WriteString(",")
 				}
-				_, _ = w.WriteString(fmt.Sprintf("[%d,%d]", i, cvt(v, 0)))
+				_, _ = w.WriteString(fmt.Sprintf("[%d,%s]", i, cvt(v, 0)))
 			}
 			_, _ = w.WriteString("]}")
 		}

@@ -4,11 +4,29 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
 	"unsafe"
 )
 
 type Value struct {
 	x, y int64
+}
+
+type ValueSerializer func(v Value) string
+
+var XValueSerializer ValueSerializer = func(v Value) string {
+	return strconv.Itoa(int(v.x))
+}
+var YValueSerializer ValueSerializer = func(v Value) string {
+	return strconv.Itoa(int(v.y))
+}
+var VectorValueSerializer ValueSerializer = func(v Value) string {
+	slice := DivideToSliceU32(v)
+	quote := ""
+	if flagQuoteVector {
+		quote = "\""
+	}
+	return fmt.Sprintf("%s[%d,%d,%d,%d]%s", quote, slice[0], slice[1], slice[2], slice[3], quote)
 }
 
 func (v *Value) Reset() {

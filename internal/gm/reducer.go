@@ -40,7 +40,7 @@ func (r *Reducer) GetWindowSampler() winSampler {
 func (r *Reducer) Describe(w io.StringWriter, serial func(v Value) string) {
 	_, _ = w.WriteString(serial(r.GetValue()))
 }
-func (r *Reducer) DescribeSeries(w io.StringWriter, opt *SeriesOption, splitName []string, cvt func(v Value, idx int) int) error {
+func (r *Reducer) DescribeSeries(w io.StringWriter, opt *SeriesOption, splitName []string, cvt ValueConverter) error {
 	// see reducer.h, Reducer::describe_series
 	if r.sampler == nil {
 		return errors.New("sampler is not created")

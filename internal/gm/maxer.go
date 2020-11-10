@@ -2,6 +2,7 @@ package gm
 
 import (
 	"io"
+	"strconv"
 )
 
 type Maxer struct {
@@ -29,16 +30,20 @@ func (m *Maxer) OnSample() {
 	m.r.OnSample()
 }
 
-func (m *Maxer) Describe(w io.Writer, quote bool) {
-	panic("implement me")
+func (m *Maxer) Describe(w io.StringWriter, quote bool) {
+	m.r.Describe(w, func(v Value) string {
+		return strconv.Itoa(int(v.x))
+	})
 }
 
-func (m *Maxer) DescribeSeries(w io.Writer, opt *SeriesOption) error {
-	panic("implement me")
+func (m *Maxer) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
+	return m.r.DescribeSeries(w, opt, nil, func(v Value, idx int) string {
+		return strconv.Itoa(int(v.x))
+	})
 }
 
 // NewMaxer create an maxer
-func NewMaxer(name string) *Maxer {
+func NewMaxer() *Maxer {
 	r := NewReducer(
 		func(dst, src Value) Value {
 			if dst.x >= src.x {
@@ -50,14 +55,7 @@ func NewMaxer(name string) *Maxer {
 		nil) // reducer do not create series sampler if invOp is nil
 
 	maxer := &Maxer{
-		VarBase: VarBase{
-			name: name,
-			id:   0,
-		},
 		r: r,
-	}
-	if len(name) != 0 {
-		maxer.id = AddVariable(maxer)
 	}
 	return maxer
 }

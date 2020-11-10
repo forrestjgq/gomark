@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 type LatencyRecorder struct {
@@ -68,19 +69,25 @@ func (lr *LatencyRecorder) OnExpose(vb *VarBase) error {
 	if err = Expose(name, "latency_percentiles", DisplayOnHTML, lr.latencyPercentiles); err != nil {
 		return err
 	}
-	lr.latencyPercentiles.SetVectorNames(fmt.Sprintf("%d%%,%d%%,%d%%,99.9%%", int(varLatencyP1), int(varLatencyP2), int(varLatencyP3)))
+	names := []string{
+		strconv.Itoa(int(varLatencyP1)) + "%",
+		strconv.Itoa(int(varLatencyP2)) + "%",
+		strconv.Itoa(int(varLatencyP3)) + "%",
+		"99.9%",
+	}
+	lr.latencyPercentiles.SetVectorNames(names)
 	return nil
 }
 
 func (lr *LatencyRecorder) OnSample() {
 }
 
-func (lr *LatencyRecorder) Describe(w io.Writer, quote bool) {
-	panic("implement me")
+func (lr *LatencyRecorder) Describe(w io.StringWriter, quote bool) {
+	panic("LatencyRecorder should not be described")
 }
 
-func (lr *LatencyRecorder) DescribeSeries(w io.Writer, opt *SeriesOption) error {
-	panic("implement me")
+func (lr *LatencyRecorder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
+	panic("LatencyRecorder should not be described")
 }
 
 func (lr *LatencyRecorder) WindowSize() int {
@@ -185,14 +192,27 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	// Window<IntRecorder> has no effect on series divide
 	// detail::DivideOnAddition<::bvar::Stat, Op>::inplace_divide(tmp, op, 60);
 	lr.latencyWindow = NewWindow(window, lr.latency.GetWindowSampler(), SeriesInSecond, op, nil)
+	f := func(v Value) string {
+		avg := v.AverageInt()
+		if avg != 0 {
+			return strconv.Itoa(int(avg))
+		}
+		return strconv.FormatFloat(v.AverageFloat(), 'f', 3, 64)
+	}
+	lr.latencyWindow.SetDescriber(f, func(v Value, idx int) string {
+		return f(v)
+	})
 
-	lr.maxLatency = NewMaxer("")
+	lr.maxLatency = NewMaxer()
 	maxOp, _ := lr.maxLatency.r.Operators()
 	lr.maxLatencyWindow = NewWindow(window, lr.maxLatency.r.GetWindowSampler(), SeriesInSecond, maxOp, statOperatorInt)
 
 	lr.count = NewPassiveStatus(func() Value {
 		return lr.latency.GetValue() // should use value.y
 	}, op, invOp, statOperatorInt)
+	lr.count.SetDescriber(YValueSerializer, func(v Value, idx int) string {
+		return YValueSerializer(v)
+	})
 
 	lr.qps = NewPassiveStatus(func() Value {
 		var v Value
@@ -201,10 +221,14 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 			return v
 		}
 
+		// x: qps, y: total count
 		v.x = int64(float64(s.value.y) / s.du.Seconds())
 		v.y = s.value.y
 		return v
 	}, op, invOp, statOperatorInt)
+	lr.count.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+		return XValueSerializer(v)
+	})
 
 	lr.latencyPercentile = NewPercentile()
 	pOp, _ := lr.latencyPercentile.Operators()
@@ -213,40 +237,69 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 		SeriesInSecond,
 		pOp, nil)
 
+	// all latency passive status returns value with same x and y
 	lr.latencyP1 = NewPassiveStatus(func() Value {
 		var v Value
 		v.x = lr.LatencyPercentile(varLatencyP1 / 100.0)
 		v.y = v.x
 		return v
 	}, op, invOp, statOperatorInt)
+	lr.latencyP1.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+		return XValueSerializer(v)
+	})
+
 	lr.latencyP2 = NewPassiveStatus(func() Value {
 		var v Value
 		v.x = lr.LatencyPercentile(varLatencyP2 / 100.0)
 		v.y = v.x
 		return v
 	}, op, invOp, statOperatorInt)
+	lr.latencyP2.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+		return XValueSerializer(v)
+	})
+
 	lr.latencyP3 = NewPassiveStatus(func() Value {
 		var v Value
 		v.x = lr.LatencyPercentile(varLatencyP3 / 100.0)
 		v.y = v.x
 		return v
 	}, op, invOp, statOperatorInt)
+	lr.latencyP3.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+		return XValueSerializer(v)
+	})
+
 	lr.latencyP999 = NewPassiveStatus(func() Value {
 		var v Value
 		v.x = lr.LatencyPercentile(999.0 / 1000.0)
 		v.y = v.x
 		return v
 	}, op, invOp, statOperatorInt)
+	lr.latencyP999.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+		return XValueSerializer(v)
+	})
+
 	lr.latencyP9999 = NewPassiveStatus(func() Value {
 		var v Value
 		v.x = lr.LatencyPercentile(9999.0 / 10000.0)
 		v.y = v.x
 		return v
 	}, op, invOp, statOperatorInt)
+	lr.latencyP9999.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+		return XValueSerializer(v)
+	})
+
 	lr.latencyCdf = newCDF(lr.latencyPercentileWindow)
 	lr.latencyPercentiles = NewPassiveStatus(func() Value {
 		return CombineToValueU32(lr.LatencyPercentiles())
 	}, op, invOp, statOperatorInt)
+	lr.latencyPercentiles.SetDescriber(VectorValueSerializer, func(v Value, idx int) string {
+		if idx >= 4 {
+			panic("invalid idx " + strconv.Itoa(idx))
+		}
+		p1 := (*uint32)(unsafe.Pointer(uintptr(unsafe.Pointer(&v.x)) + unsafe.Sizeof(uint32(0))*uintptr(idx)))
+		val := int(*p1)
+		return strconv.Itoa(val)
+	})
 
 	// this is a variable that does not display
 	err := AddVariable("", name, DisplayOnNothing, lr)

@@ -15,15 +15,14 @@ func (c *CDF) VarBase() *VarBase {
 	return c.vb
 }
 
-func (c *CDF) Push(v Mark) {
-	panic("implement me")
+func (c *CDF) Push(_ Mark) {
+	panic("CDF push should not be called")
 }
 
 func (c *CDF) OnSample() {
-	panic("implement me")
 }
 
-func (c *CDF) Describe(w io.StringWriter, quote bool) {
+func (c *CDF) Describe(w io.StringWriter, _ bool) {
 	_, _ = w.WriteString("\"click to view\"")
 }
 

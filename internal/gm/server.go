@@ -41,16 +41,22 @@ func Lock() interface {
 }
 
 func (s *server) run() {
-	for rx := range s.stubc {
-		switch rx.cmd() {
-		case cmdLock:
-			s.wg.Wait()
-		case cmdNew:
-			s.newStub(rx)
-		case cmdCancel:
-			s.removeStub(rx)
-		case cmdMark:
-			s.markStub(rx)
+	for {
+		select {
+		case f := <-s.callc:
+			f()
+		case rx := <-s.stubc:
+			switch rx.cmd() {
+			case cmdLock:
+				s.wg.Wait()
+			case cmdNew:
+				s.newStub(rx)
+			case cmdCancel:
+				s.removeStub(rx)
+			case cmdMark:
+				s.markStub(rx)
+			}
+
 		}
 	}
 }
