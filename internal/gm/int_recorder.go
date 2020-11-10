@@ -1,11 +1,6 @@
 package gm
 
-import (
-	"io"
-)
-
 type IntRecorder struct {
-	VarBase
 	op, invOp Operator
 	value     Value // x: sum, y: num
 	sampler   *ReducerSampler
@@ -14,13 +9,6 @@ type IntRecorder struct {
 func (ir *IntRecorder) Operators() (op Operator, invOp Operator) {
 	op, invOp = ir.op, ir.invOp
 	return
-}
-func (ir *IntRecorder) Name() string {
-	return ir.name
-}
-
-func (ir *IntRecorder) Identity() Identity {
-	return ir.id
 }
 
 func (ir *IntRecorder) Push(v Mark) {
@@ -38,22 +26,10 @@ func (ir *IntRecorder) GetValue() Value {
 	return ir.value
 }
 
-func (ir *IntRecorder) OnExpose() {
-	panic("implement me")
-}
-
 func (ir *IntRecorder) OnSample() {
 	if ir.sampler != nil {
 		ir.sampler.takeSample()
 	}
-}
-
-func (ir *IntRecorder) Describe(w io.Writer, quote bool) {
-	panic("implement me")
-}
-
-func (ir *IntRecorder) DescribeSeries(w io.Writer, opt *SeriesOption) error {
-	panic("implement me")
 }
 
 func (ir *IntRecorder) sum() int64 {
@@ -87,7 +63,6 @@ func (ir *IntRecorder) GetWindowSampler() winSampler {
 }
 func NewIntRecorder() *IntRecorder {
 	ir := &IntRecorder{
-		VarBase: VarBase{},
 		op: func(left, right Value) Value {
 			return left.Add(&right)
 		},

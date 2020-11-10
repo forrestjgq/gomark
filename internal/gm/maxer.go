@@ -6,16 +6,7 @@ import (
 )
 
 type Maxer struct {
-	VarBase
 	r *Reducer
-}
-
-func (m *Maxer) Name() string {
-	return m.name
-}
-
-func (m *Maxer) Identity() Identity {
-	return m.id
 }
 
 func (m *Maxer) Push(v Mark) {
