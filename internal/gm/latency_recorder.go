@@ -1,6 +1,14 @@
 package gm
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+	"strings"
+)
+
 type LatencyRecorder struct {
+	vb                      *VarBase
 	latency                 *IntRecorder
 	maxLatency              *Maxer
 	latencyPercentile       *Percentile
@@ -16,6 +24,63 @@ type LatencyRecorder struct {
 	latencyP9999            *PassiveStatus
 	latencyPercentiles      *PassiveStatus
 	latencyCdf              *CDF
+}
+
+func (lr *LatencyRecorder) VarBase() *VarBase {
+	return lr.vb
+}
+
+func (lr *LatencyRecorder) OnExpose(vb *VarBase) error {
+	lr.vb = vb
+
+	var err error
+	name := vb.name
+	if err = Expose(name, "latency", DisplayOnAll, lr.latencyWindow); err != nil {
+		return err
+	}
+	if err = Expose(name, "max_latency", DisplayOnAll, lr.maxLatencyWindow); err != nil {
+		return err
+	}
+	if err = Expose(name, "count", DisplayOnAll, lr.count); err != nil {
+		return err
+	}
+	if err = Expose(name, "qps", DisplayOnAll, lr.qps); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_"+strconv.Itoa(int(varLatencyP1)), DisplayOnPlainText, lr.latencyP1); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_"+strconv.Itoa(int(varLatencyP2)), DisplayOnPlainText, lr.latencyP2); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_"+strconv.Itoa(int(varLatencyP3)), DisplayOnPlainText, lr.latencyP3); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_999", DisplayOnPlainText, lr.latencyP999); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_9999", DisplayOnAll, lr.latencyP9999); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_cdf", DisplayOnHTML, lr.latencyCdf); err != nil {
+		return err
+	}
+	if err = Expose(name, "latency_percentiles", DisplayOnHTML, lr.latencyPercentiles); err != nil {
+		return err
+	}
+	lr.latencyPercentiles.SetVectorNames(fmt.Sprintf("%d%%,%d%%,%d%%,99.9%%", int(varLatencyP1), int(varLatencyP2), int(varLatencyP3)))
+	return nil
+}
+
+func (lr *LatencyRecorder) OnSample() {
+}
+
+func (lr *LatencyRecorder) Describe(w io.Writer, quote bool) {
+	panic("implement me")
+}
+
+func (lr *LatencyRecorder) DescribeSeries(w io.Writer, opt *SeriesOption) error {
+	panic("implement me")
 }
 
 func (lr *LatencyRecorder) WindowSize() int {
@@ -69,24 +134,27 @@ func (lr *LatencyRecorder) LatencyName() string {
 }
 
 func (lr *LatencyRecorder) LatencyPercentilesName() string {
-	return lr.latencyPercentiles.Name()
+	return lr.latencyPercentiles.VarBase().name
 }
 func (lr *LatencyRecorder) LatencyCDFName() string {
-	return lr.latencyCdf.Name()
+	return lr.latencyCdf.VarBase().name
 }
 func (lr *LatencyRecorder) MaxLatencyName() string {
 	return lr.maxLatencyWindow.Name()
 }
 func (lr *LatencyRecorder) CountName() string {
-	return lr.count.Name()
+	return lr.count.VarBase().name
 }
 func (lr *LatencyRecorder) QpsName() string {
-	return lr.qps.Name()
+	return lr.qps.VarBase().name
 }
 func (lr *LatencyRecorder) Push(v Mark) {
+	lr.latency.Push(v)
+	lr.maxLatency.Push(v)
+	lr.latencyPercentile.Push(v)
 }
 
-func NewLatencyRecorder(name string) *LatencyRecorder {
+func NewLatencyRecorder(name string) (*LatencyRecorder, error) {
 	return NewLatencyRecorderInWindow(name, defaultDumpInterval)
 }
 
@@ -99,8 +167,18 @@ var statOperatorInt OperatorInt = func(left Value, right int) Value {
 	return left
 }
 
-func NewLatencyRecorderInWindow(name string, window int) *LatencyRecorder {
+func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, error) {
 	lr := &LatencyRecorder{}
+
+	name = strings.TrimSuffix(name, "latency")
+	name = strings.TrimSuffix(name, "Latency")
+	if len(name) == 0 {
+		return nil, fmt.Errorf("invalid name %s", name)
+	}
+
+	// if len(prefix) > 0 {
+	// 	name = prefix + "_" + name
+	// }
 
 	lr.latency = NewIntRecorder()
 	op, invOp := lr.latency.Operators()
@@ -170,5 +248,10 @@ func NewLatencyRecorderInWindow(name string, window int) *LatencyRecorder {
 		return CombineToValueU32(lr.LatencyPercentiles())
 	}, op, invOp, statOperatorInt)
 
-	return lr
+	// this is a variable that does not display
+	err := AddVariable("", name, DisplayOnNothing, lr)
+	if err != nil {
+		return nil, err
+	}
+	return lr, nil
 }

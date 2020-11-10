@@ -8,6 +8,7 @@ const (
 	DisplayOnHTML DisplayFilter = iota + 1
 	DisplayOnPlainText
 	DisplayOnAll
+	DisplayOnNothing
 )
 
 type SeriesOption struct {
@@ -51,15 +52,31 @@ type DumpOption struct {
 	blackWildcards string
 }
 type VarBase struct {
-	name string
-	id   Identity
+	name          string
+	id            Identity
+	displayFilter DisplayFilter
 }
+
+func (vb *VarBase) Name() string {
+	return vb.name
+}
+func (vb *VarBase) ID() Identity {
+	return vb.id
+}
+func (vb *VarBase) Valid() bool {
+	return vb.id != 0
+}
+func (vb *VarBase) GetDisplayFilter() DisplayFilter {
+	return vb.displayFilter
+}
+
 type Variable interface {
-	Name() string
-	Identity() Identity
+	VarBase() *VarBase
 	Push(v Mark)
-	OnExpose()
+	// OnExpose is called inside server after variable is registered
+	OnExpose(vb *VarBase) error
+	//Dispose()
 	OnSample()
-	Describe(w io.Writer, quote bool)
-	DescribeSeries(w io.Writer, opt *SeriesOption) error
+	Describe(w io.StringWriter, quote bool)
+	DescribeSeries(w io.StringWriter, opt *SeriesOption) error
 }

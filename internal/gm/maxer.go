@@ -18,7 +18,7 @@ func (m *Maxer) Identity() Identity {
 }
 
 func (m *Maxer) Push(v Mark) {
-	panic("implement me")
+	m.r.Push(v)
 }
 
 func (m *Maxer) OnExpose() {

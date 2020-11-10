@@ -7,24 +7,26 @@ import (
 )
 
 type Adder struct {
-	VarBase
-	r *Reducer
+	vb *VarBase
+	r  *Reducer
 }
 
-func (a *Adder) Name() string {
-	return a.name
+func (a *Adder) VarBase() *VarBase {
+	return a.vb
 }
 
-func (a *Adder) Identity() Identity {
-	return a.id
+func (a *Adder) Expose(prefix, name string, displayFilter DisplayFilter) error {
+	var err error
+	a.vb, err = AddVariable("", name, DisplayOnAll, a)
+	return err
+}
+
+func (a *Adder) Dispose() {
+	panic("implement me")
 }
 
 func (a *Adder) Push(v Mark) {
 	a.r.Push(v)
-}
-
-func (a *Adder) OnExpose() {
-	panic("implement me")
 }
 
 func (a *Adder) OnSample() {
@@ -45,15 +47,19 @@ func (a *Adder) DescribeSeries(w io.Writer, opt *SeriesOption) error {
 
 // Mark a value
 func (a *Adder) Mark(n int32) {
-	s := makeStub(cmdMark, a.id, Mark(n))
-	PushStub(s)
+	if a.vb != nil && a.vb.Valid() {
+		s := makeStub(cmdMark, a.vb.ID(), Mark(n))
+		PushStub(s)
+	}
 }
 func (a *Adder) Cancel() {
-	RemoveVariable(a.id)
+	if a.vb != nil && a.vb.Valid() {
+		RemoveVariable(a.vb.ID())
+	}
 }
 
 // NewAdder create an adder
-func NewAdder(name string) gmi.Marker {
+func NewAdder(name string) (gmi.Marker, error) {
 	r := NewReducer(
 		func(dst, src Value) Value {
 			return dst.Add(&src)
@@ -69,12 +75,13 @@ func NewAdder(name string) gmi.Marker {
 		})
 
 	adder := &Adder{
-		VarBase: VarBase{
-			name: name,
-			id:   0,
-		},
 		r: r,
 	}
-	adder.id = AddVariable(adder)
-	return adder
+
+	defer Lock().Unlock()
+	err := adder.Expose("", name, DisplayOnAll)
+	if err != nil {
+		return nil, err
+	}
+	return adder, nil
 }

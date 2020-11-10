@@ -18,12 +18,25 @@ type winSampler interface {
 }
 
 type Window struct {
+	vb          *VarBase
 	op          Operator
 	seriesDivOp OperatorInt
 	sampler     winSampler
 	window      int
 	series      *IntSeries
 	frequency   SeriesFrequency
+}
+
+func (w *Window) VarBase() *VarBase {
+	return w.vb
+}
+
+func (w *Window) OnExpose(vb *VarBase) error {
+	w.vb = vb
+	if w.series == nil && flagSaveSeries {
+		w.series = NewIntSeries(w.op, w.seriesDivOp)
+	}
+	return nil
 }
 
 func (w *Window) Name() string {
@@ -36,12 +49,6 @@ func (w *Window) Identity() Identity {
 
 func (w *Window) Push(v Mark) {
 	panic("implement me")
-}
-
-func (w *Window) OnExpose() {
-	if w.series == nil && flagSaveSeries {
-		w.series = NewIntSeries(w.op, w.seriesDivOp)
-	}
 }
 
 func (w *Window) OnSample() {
@@ -68,6 +75,7 @@ func (w *Window) GetSpanOf(window int) *sampleInRange {
 func (w *Window) GetSpan() *sampleInRange {
 	return w.sampler.ValueInWindow(w.window)
 }
+
 func (w *Window) ValueOf(window int) Value {
 	v := w.GetSpanOf(window)
 	if v != nil {
@@ -77,6 +85,7 @@ func (w *Window) ValueOf(window int) Value {
 }
 func (w *Window) Value() Value {
 	return w.ValueOf(w.window)
+
 }
 func (w *Window) WindowSize() int {
 	return w.window
