@@ -9,6 +9,9 @@ type Maxer struct {
 	r *Reducer
 }
 
+func (m *Maxer) Dispose() {
+	m.r.Dispose()
+}
 func (m *Maxer) Push(v Mark) {
 	m.r.Push(v)
 }

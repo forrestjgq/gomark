@@ -134,7 +134,7 @@ func (rs *PercentileReducerSampler) SetWindow(window int) {
 }
 func (rs *PercentileReducerSampler) takeSample() {
 	var s PercentileSample
-	if _, invOp := rs.r.Operators(); invOp != nil {
+	if _, invOp := rs.r.Operators(); invOp == nil {
 		s.value = rs.r.Reset()
 	} else {
 		s.value = rs.r.GetValue()

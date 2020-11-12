@@ -23,16 +23,13 @@ func (a *Adder) OnExpose(vb *VarBase) error {
 }
 
 func (a *Adder) Dispose() []Identity {
+	a.r.Dispose()
 	a.r = nil
 	return nil
 }
 
 func (a *Adder) Push(v Mark) {
 	a.r.Push(v)
-}
-
-func (a *Adder) OnSample() {
-	a.r.OnSample()
 }
 
 func (a *Adder) Describe(w io.StringWriter, _ bool) {
@@ -86,7 +83,7 @@ func NewAdder(name string) (gmi.Marker, error) {
 		r: r,
 	}
 
-	err := AddVariable("", name, DisplayOnAll, adder)
+	err := Expose("", name, DisplayOnAll, adder)
 	if err != nil {
 		return nil, err
 	}

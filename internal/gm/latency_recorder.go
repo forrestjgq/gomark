@@ -38,6 +38,9 @@ func (lr *LatencyRecorder) Cancel() {
 }
 
 func (lr *LatencyRecorder) Dispose() []Identity {
+	lr.latency.Dispose()
+	lr.maxLatency.Dispose()
+
 	lr.latency = nil
 	lr.maxLatency = nil
 	lr.latencyPercentile = nil
@@ -130,9 +133,6 @@ func (lr *LatencyRecorder) OnExpose(vb *VarBase) error {
 	}
 	lr.latencyPercentiles.SetVectorNames(names)
 	return nil
-}
-
-func (lr *LatencyRecorder) OnSample() {
 }
 
 func (lr *LatencyRecorder) Describe(_ io.StringWriter, _ bool) {
@@ -358,7 +358,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	})
 
 	// this is a variable that does not display
-	err := AddVariable("", name, DisplayOnNothing, lr)
+	err := Expose("", name, DisplayOnNothing, lr)
 	if err != nil {
 		return nil, err
 	}

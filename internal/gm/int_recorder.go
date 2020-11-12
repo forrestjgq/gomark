@@ -1,5 +1,7 @@
 package gm
 
+import "github.com/golang/glog"
+
 type IntRecorder struct {
 	op, invOp Operator
 	value     Value // x: sum, y: num
@@ -14,6 +16,7 @@ func (ir *IntRecorder) Operators() (op Operator, invOp Operator) {
 func (ir *IntRecorder) Push(v Mark) {
 	ir.value.x += int64(v)
 	ir.value.y += 1
+	glog.Infof("IntRecord value: %v", ir.value)
 }
 
 func (ir *IntRecorder) Reset() Value {
@@ -26,9 +29,9 @@ func (ir *IntRecorder) GetValue() Value {
 	return ir.value
 }
 
-func (ir *IntRecorder) OnSample() {
+func (ir *IntRecorder) Dispose() {
 	if ir.sampler != nil {
-		ir.sampler.takeSample()
+		ir.sampler.dispose()
 	}
 }
 

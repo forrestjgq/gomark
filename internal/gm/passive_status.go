@@ -21,6 +21,7 @@ type PassiveStatus struct {
 }
 
 func (p *PassiveStatus) Dispose() []Identity {
+	p.sampler.dispose()
 	p.sampler = nil
 	p.series = nil
 	return nil

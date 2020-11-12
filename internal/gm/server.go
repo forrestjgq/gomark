@@ -18,22 +18,31 @@ const (
 	sizeOfQ = 10000
 )
 
+type sampler interface {
+	takeSample()
+}
+
+type disposer func()
+
 type server struct {
-	seq   Identity
-	stubc chan stub
-	callc chan func()
-	all   map[Identity]Variable
-	tk    *time.Ticker
+	seq      Identity
+	smp      Identity
+	stubc    chan stub
+	callc    chan func()
+	all      map[Identity]Variable
+	samplers map[Identity]sampler
+	tk       *time.Ticker
 }
 
 var srv *server
 
 func init() {
 	srv = &server{
-		stubc: make(chan stub, sizeOfQ),
-		callc: make(chan func()),
-		all:   make(map[Identity]Variable),
-		tk:    time.NewTicker(time.Second),
+		stubc:    make(chan stub, sizeOfQ),
+		callc:    make(chan func()),
+		all:      make(map[Identity]Variable),
+		samplers: make(map[Identity]sampler),
+		tk:       time.NewTicker(time.Second),
 	}
 	go srv.run()
 }
@@ -50,9 +59,21 @@ func (s *server) run() {
 		}
 	}
 }
+func (s *server) removeSample(id Identity) {
+	delete(s.samplers, id)
+}
+func (s *server) addSample(smp sampler) Identity {
+	for {
+		s.smp++
+		if _, ok := s.samplers[s.smp]; !ok && s.smp != 0 {
+			s.samplers[s.smp] = smp
+			return s.smp
+		}
+	}
+}
 func (s *server) sample() {
-	for _, v := range s.all {
-		v.OnSample()
+	for _, smp := range s.samplers {
+		smp.takeSample()
 	}
 }
 func (s *server) markStub(stub stub) {
@@ -229,14 +250,6 @@ func callFunc(call func()) {
 	}
 	wg.Wait()
 }
-func AddVariable(prefix, name string, displayFilter DisplayFilter, v Variable) error {
-	var err error
-	f := func() {
-		err = Expose(prefix, name, displayFilter, v)
-	}
-	callFunc(f)
-	return err
-}
 func RemoveVariable(id Identity) {
 	f := func() {
 		srv.remove(id)
@@ -267,4 +280,15 @@ func Dump(dumper Dumper, option *DumpOption) (int, error) {
 
 func PushStub(s stub) {
 	srv.stubc <- s
+}
+
+func AddSampler(s sampler) disposer {
+	id := srv.addSample(s)
+	return func() {
+		srv.removeSample(id)
+	}
+}
+
+func RemoteCall(call func()) {
+	callFunc(call)
 }

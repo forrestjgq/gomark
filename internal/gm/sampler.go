@@ -14,10 +14,6 @@ type sampleInRange struct {
 	value Value
 	du    time.Duration
 }
-type sampler interface {
-	takeSample()
-	destroy()
-}
 type reduceable interface {
 	Reset() Value
 	GetValue() Value
@@ -25,9 +21,9 @@ type reduceable interface {
 }
 
 type sampleQueue struct {
-	q          []sample
-	end, start int // filled from start to end-1
-	window     int
+	q         []sample
+	sz, start int // filled from start to end-1
+	window    int
 }
 
 func (q *sampleQueue) inc(n int) int {
@@ -37,6 +33,7 @@ func (q *sampleQueue) dec(n int) int {
 	return (n + len(q.q) - 1) % len(q.q)
 }
 func (q *sampleQueue) push(s sample) {
+	glog.Info("Push ", s)
 	if q.window+1 > len(q.q) {
 		if q.window == 0 {
 			q.window = 1
@@ -48,21 +45,28 @@ func (q *sampleQueue) push(s sample) {
 		}
 		tq := make([]sample, newlen)
 		sz := q.size()
-		if q.end > q.start {
-			copy(tq[0:sz], q.q[q.start:q.end])
-		} else if q.end < q.start {
-			seg := sz - q.start
-			copy(tq[0:seg], q.q[q.start:])
-			copy(tq[seg:sz], q.q[0:q.end])
+		if sz > 0 {
+			last := q.last()
+			if last > q.start {
+				/* ---- [start][1][2][3]...[last][end] ---- */
+				copy(tq[0:sz], q.q[q.start:last+1])
+			} else if last < q.start {
+				seg := sz - q.start
+				copy(tq[0:seg], q.q[q.start:])
+				copy(tq[seg:sz], q.q[0:last+1])
+			}
 		}
-		q.start, q.end = 0, sz
+		q.start = 0
+		q.q = tq
 	}
 
 	if q.full() {
 		_ = q.pop()
 	}
-	q.q[q.end] = s
-	q.end = q.inc(q.end)
+	last := q.inc(q.last())
+	q.q[last] = s
+	q.sz++
+	glog.Infof("q: %+v", q)
 }
 func (q *sampleQueue) pop() sample {
 	if q.empty() {
@@ -70,8 +74,9 @@ func (q *sampleQueue) pop() sample {
 	}
 	s := q.q[q.start]
 	q.start = q.inc(q.start)
+	q.sz--
 	if q.empty() {
-		q.end, q.start = 0, 0
+		q.start = 0
 	}
 	return s
 }
@@ -79,7 +84,7 @@ func (q *sampleQueue) top() sample {
 	if q.empty() {
 		panic("queue is empty")
 	}
-	return q.q[q.dec(q.end)]
+	return q.q[q.last()]
 }
 func (q *sampleQueue) latest() sample {
 	return q.top()
@@ -108,16 +113,16 @@ func (q *sampleQueue) oldestIn(n int) sample {
 	return q.q[idx]
 }
 func (q *sampleQueue) size() int {
-	if q.start == q.end {
-		return 0
-	}
-	return (q.end + len(q.q) - q.start) % len(q.q)
+	return q.sz
+}
+func (q *sampleQueue) last() int {
+	return (q.start + q.sz - 1) % len(q.q)
 }
 func (q *sampleQueue) full() bool {
 	return q.size() >= len(q.q)
 }
 func (q *sampleQueue) empty() bool {
-	return q.start == q.end
+	return q.sz == 0
 }
 func (q *sampleQueue) setWindow(window int) {
 	if window > q.window {
@@ -126,8 +131,15 @@ func (q *sampleQueue) setWindow(window int) {
 }
 
 type ReducerSampler struct {
-	r reduceable
-	q sampleQueue
+	dis disposer
+	r   reduceable
+	q   sampleQueue
+}
+
+func (rs *ReducerSampler) dispose() {
+	if rs.dis != nil {
+		rs.dis()
+	}
 }
 
 func (rs *ReducerSampler) SetWindow(window int) {
@@ -135,7 +147,7 @@ func (rs *ReducerSampler) SetWindow(window int) {
 }
 func (rs *ReducerSampler) takeSample() {
 	var s sample
-	if _, invOp := rs.r.Operators(); invOp != nil {
+	if _, invOp := rs.r.Operators(); invOp == nil {
 		s.value = rs.r.Reset()
 	} else {
 		s.value = rs.r.GetValue()
@@ -199,5 +211,6 @@ func NewReducerSampler(r reduceable) *ReducerSampler {
 		r: r,
 	}
 	s.SetWindow(1)
+	s.dis = AddSampler(s)
 	return s
 }

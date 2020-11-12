@@ -10,16 +10,29 @@ func StartHTTPServer(port int) {
 	httpsrv.Start(port)
 }
 func NewLatencyRecorder(name string) gmi.Marker {
-	lr, err := gm.NewLatencyRecorder(name)
-	if err != nil {
-		return nil
-	}
-	return lr
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		lr, err := gm.NewLatencyRecorder(name)
+		if err == nil {
+			ret = lr
+		}
+	})
+	return ret
 }
 func NewAdder(name string) gmi.Marker {
-	lr, err := gm.NewAdder(name)
-	if err != nil {
-		return nil
-	}
-	return lr
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		add, err := gm.NewAdder(name)
+		if err == nil {
+			ret = add
+		}
+	})
+	return ret
+}
+func NewWindowMaxer(name string) gmi.Marker {
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		ret = gm.NewWindowMaxer(name)
+	})
+	return ret
 }

@@ -19,18 +19,22 @@ type winSampler interface {
 }
 
 type Window struct {
-	vb          *VarBase
-	op          Operator
-	seriesDivOp OperatorInt
-	sampler     winSampler
-	window      int
-	series      *IntSeries
-	frequency   SeriesFrequency
-	serializer  ValueSerializer
-	converter   ValueConverter
+	vb           *VarBase
+	op           Operator
+	seriesDivOp  OperatorInt
+	sampler      winSampler
+	window       int
+	series       *IntSeries
+	frequency    SeriesFrequency
+	serializer   ValueSerializer
+	converter    ValueConverter
+	removeSample disposer
 }
 
 func (w *Window) Dispose() []Identity {
+	if w.series != nil && w.removeSample != nil {
+		w.removeSample()
+	}
 	w.sampler = nil
 	w.series = nil
 	return nil
@@ -44,6 +48,7 @@ func (w *Window) OnExpose(vb *VarBase) error {
 	w.vb = vb
 	if w.series == nil && flagSaveSeries {
 		w.series = NewIntSeries(w.op, w.seriesDivOp)
+		w.removeSample = AddSampler(w)
 	}
 	return nil
 }
@@ -52,7 +57,7 @@ func (w *Window) Push(v Mark) {
 	panic("implement me")
 }
 
-func (w *Window) OnSample() {
+func (w *Window) takeSample() {
 	if w.series != nil {
 		if w.frequency == SeriesInSecond {
 			w.series.Append(w.ValueOf(1))

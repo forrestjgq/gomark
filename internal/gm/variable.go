@@ -86,7 +86,6 @@ type Variable interface {
 	OnExpose(vb *VarBase) error
 	// Notify variable to dispose, and return all child variables that need to be removed
 	Dispose() []Identity
-	OnSample()
 	Describe(w io.StringWriter, quote bool)
 	DescribeSeries(w io.StringWriter, opt *SeriesOption) error
 }
