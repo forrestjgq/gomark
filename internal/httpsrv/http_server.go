@@ -35,7 +35,6 @@ func Start(port int) {
 	r.HandleFunc("/js/{script}", procJs)
 	r.HandleFunc("/vars", procVar)
 	r.HandleFunc("/vars/{var}", procVar)
-	r.HandleFunc("/vars/{var}/{wildcards}", procVar)
 	server.r = r
 
 	go func() {
@@ -192,7 +191,7 @@ func procVar(w http.ResponseWriter, r *http.Request) {
 	if html {
 		opt.DisplayFilter = gm.DisplayOnHTML
 	}
-	opt.WhiteWildcards = vars["wildcards"]
+	opt.WhiteWildcards = vars["var"]
 	n, err := gm.Dump(dumper, opt)
 	if err != nil {
 		w.WriteHeader(400)

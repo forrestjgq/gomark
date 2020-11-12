@@ -16,3 +16,10 @@ func NewLatencyRecorder(name string) gmi.Marker {
 	}
 	return lr
 }
+func NewAdder(name string) gmi.Marker {
+	lr, err := gm.NewAdder(name)
+	if err != nil {
+		return nil
+	}
+	return lr
+}

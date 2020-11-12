@@ -89,16 +89,18 @@ func wildcmp(wild string, str string, questionMark byte) bool {
 			j = 0
 
 			str = cp
-			cp = cp[1:]
+			if len(cp) > 0 {
+				cp = cp[1:]
+			}
 			i = 0
 		}
 	}
 
-	for wild[j] == '*' {
+	for j < len(wild) && wild[j] == '*' {
 		j++
 	}
 
-	return j < len(wild)
+	return j >= len(wild)
 }
 func (w *WildcardMatcher) Wildcards() []string {
 	return w.wcs
@@ -123,6 +125,12 @@ func (w *WildcardMatcher) Match(name string) bool {
 
 	return false
 }
+func splitAny(s string, seps string) []string {
+	splitter := func(r rune) bool {
+		return strings.ContainsRune(seps, r)
+	}
+	return strings.FieldsFunc(s, splitter)
+}
 func NewWildcardMatcher(wildcards string, questionMark byte, onBothEmpty bool) *WildcardMatcher {
 	w := &WildcardMatcher{
 		questionMark: questionMark,
@@ -136,14 +144,14 @@ func NewWildcardMatcher(wildcards string, questionMark byte, onBothEmpty bool) *
 	}
 
 	pattern := string([]byte{'*', questionMark})
-	sps := strings.Split(wildcards, ",;")
+	//sps := strings.Split(wildcards, ",;")
+	sps := splitAny(wildcards, ",;")
 	for _, name := range sps {
 		if len(name) == 0 {
 			continue
 		}
 
-		idx := strings.Index(name, pattern)
-		if idx >= 0 {
+		if strings.ContainsAny(name, pattern) {
 			w.wcs = append(w.wcs, name)
 		} else {
 			found := false

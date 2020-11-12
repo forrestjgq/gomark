@@ -238,7 +238,7 @@ var htmlContent = `
             if (text == '') {
                 return '/vars';
             }
-            text = text.replace(/(;|,|\\s|\\*)+/g, ' ').trim().replace(/ /g, '*;*');
+            text = text.replace(/(;|,|\s|\*)+/g, ' ').trim().replace(/ /g, '*;*');
             if (text == '') {
                 return '/vars';
             }
