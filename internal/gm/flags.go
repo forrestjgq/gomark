@@ -2,7 +2,8 @@ package gm
 
 const (
 	flagSaveSeries      = true
-	flagQuoteVector     = true
+	FlagQuoteVector     = true
+	flagLogDumped       = false
 	defaultDumpInterval = 10
 	varLatencyP1        = float64(80)
 	varLatencyP2        = float64(90)

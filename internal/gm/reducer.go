@@ -46,7 +46,7 @@ func (r *Reducer) DescribeSeries(w io.StringWriter, opt *SeriesOption, splitName
 		return errors.New("sampler is not created")
 	}
 
-	if !opt.testOnly {
+	if !opt.TestOnly {
 		r.series.Describe(w, splitName, cvt)
 	}
 	return nil

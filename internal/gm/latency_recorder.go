@@ -28,6 +28,15 @@ type LatencyRecorder struct {
 	child                   []Identity
 }
 
+func (lr *LatencyRecorder) Mark(n int32) {
+	mark := makeStub(lr.VarBase().ID(), Mark(n))
+	PushStub(mark)
+}
+
+func (lr *LatencyRecorder) Cancel() {
+	RemoveVariable(lr.VarBase().ID())
+}
+
 func (lr *LatencyRecorder) Dispose() []Identity {
 	lr.latency = nil
 	lr.maxLatency = nil
@@ -250,6 +259,9 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	lr.maxLatency = NewMaxer()
 	maxOp, _ := lr.maxLatency.r.Operators()
 	lr.maxLatencyWindow = NewWindow(window, lr.maxLatency.r.GetWindowSampler(), SeriesInSecond, maxOp, statOperatorInt)
+	lr.maxLatencyWindow.SetDescriber(f, func(v Value, idx int) string {
+		return f(v)
+	})
 
 	lr.count = NewPassiveStatus(func() Value {
 		return lr.latency.GetValue() // should use value.y
@@ -270,7 +282,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 		v.y = s.value.y
 		return v
 	}, op, invOp, statOperatorInt)
-	lr.count.SetDescriber(XValueSerializer, func(v Value, idx int) string {
+	lr.qps.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
 

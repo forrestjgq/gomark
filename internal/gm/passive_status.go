@@ -67,7 +67,7 @@ func (p *PassiveStatus) DescribeSeries(w io.StringWriter, opt *SeriesOption) err
 	if p.series == nil {
 		return errors.New("no series defined")
 	}
-	if !opt.testOnly {
+	if !opt.TestOnly {
 		p.series.Describe(w, p.names, p.converter)
 	}
 	return nil

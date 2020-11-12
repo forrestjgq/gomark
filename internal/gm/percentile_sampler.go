@@ -1,8 +1,9 @@
 package gm
 
 import (
-	"log"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 type PercentileOperator func(left, right *PercentileSamples)
@@ -141,19 +142,21 @@ func (rs *PercentileReducerSampler) takeSample() {
 	s.ts = time.Now()
 	rs.q.push(s)
 }
-func (rs *PercentileReducerSampler) ValueInWindow(window int) *PercentileSampleInRange {
+func (rs *PercentileReducerSampler) ValueInWindow(window int) PercentileSampleInRange {
+	var s PercentileSampleInRange
 	if window <= 0 {
-		log.Fatal("invalid window size ", window)
-		return nil
+		glog.Fatal("invalid window size ", window)
+		s.value = &PercentileSamples{}
+		return s
 	}
 
 	if rs.q.size() <= 1 {
-		return nil
+		s.value = &PercentileSamples{}
+		return s
 	}
 
 	oldest := rs.q.oldestIn(window)
 	latest := rs.q.latest()
-	var s PercentileSampleInRange
 	op, inv := rs.r.Operators()
 	if inv == nil {
 		s.value = latest.value.Dup()
@@ -169,11 +172,11 @@ func (rs *PercentileReducerSampler) ValueInWindow(window int) *PercentileSampleI
 		inv(latest.value, oldest.value)
 	}
 	s.du = latest.ts.Sub(oldest.ts)
-	return &s
+	return s
 }
 func (rs *PercentileReducerSampler) SamplesInWindow(window int) (ret []*PercentileSamples) {
 	if window <= 0 {
-		log.Fatal("invalid window size ", window)
+		glog.Fatal("invalid window size ", window)
 		return
 	}
 

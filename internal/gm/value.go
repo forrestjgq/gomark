@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strconv"
 	"unsafe"
+
+	"github.com/golang/glog"
 )
 
 type Value struct {
@@ -23,7 +25,7 @@ var YValueSerializer ValueSerializer = func(v Value) string {
 var VectorValueSerializer ValueSerializer = func(v Value) string {
 	slice := DivideToSliceU32(v)
 	quote := ""
-	if flagQuoteVector {
+	if FlagQuoteVector {
 		quote = "\""
 	}
 	return fmt.Sprintf("%s[%d,%d,%d,%d]%s", quote, slice[0], slice[1], slice[2], slice[3], quote)
@@ -88,7 +90,7 @@ func CombineToValue(s []int64) Value {
 	src := *(*[]int32)(unsafe.Pointer(&tmp))
 	for i, v := range s {
 		if v >= math.MaxInt32 {
-			fmt.Println("overflow")
+			glog.Error("overflow")
 			src[i] = math.MaxInt32
 		} else {
 			src[i] = int32(v)

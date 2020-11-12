@@ -35,7 +35,7 @@ func (c *CDF) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 	if c.w == nil {
 		return errors.New("CDF does not take a window")
 	}
-	if opt.testOnly {
+	if opt.TestOnly {
 		return nil
 	}
 

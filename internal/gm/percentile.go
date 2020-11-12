@@ -1,11 +1,11 @@
 package gm
 
 import (
-	"fmt"
-	"log"
 	"math"
 	"reflect"
 	"sort"
+
+	"github.com/golang/glog"
 
 	fr "github.com/valyala/fastrand"
 )
@@ -77,7 +77,7 @@ func (pi *PercentileInterval) Merge(rhs *PercentileInterval) {
 
 	if int(pi.numAdded+rhs.numAdded) <= pi.sampleSize {
 		if int(pi.numSamples) != int(pi.numAdded) {
-			log.Fatalf("numAdded %v rhs numAdded %v numSamples %v rhs numSamples %v sampleSize %v rhs sampleSize %v\n",
+			glog.Fatalf("numAdded %v rhs numAdded %v numSamples %v rhs numSamples %v sampleSize %v rhs sampleSize %v",
 				pi.numAdded, rhs.numAdded, pi.numSamples, rhs.numSamples, pi.sampleSize, rhs.sampleSize)
 		}
 		copy(pi.samples[int(pi.numSamples):int(pi.numSamples+rhs.numSamples)], rhs.samples[0:rhs.numSamples])
@@ -85,7 +85,7 @@ func (pi *PercentileInterval) Merge(rhs *PercentileInterval) {
 	} else {
 		numRemain := roundOfExpectation(uint(pi.numAdded)*uint(pi.sampleSize), uint(pi.numAdded)+uint(rhs.numAdded))
 		if numRemain > uint(pi.numSamples) {
-			log.Fatalf("remain: %v samples %v\n", numRemain, pi.numSamples)
+			glog.Fatalf("remain: %v samples %v\n", numRemain, pi.numSamples)
 		}
 		for i := uint(pi.numSamples); i > numRemain; i-- {
 			r := fr.Uint32n(uint32(i))
@@ -94,7 +94,7 @@ func (pi *PercentileInterval) Merge(rhs *PercentileInterval) {
 
 		numRemainFromRhs := uint(pi.sampleSize) - numRemain
 		if numRemainFromRhs > uint(rhs.numSamples) {
-			log.Fatalf("remian from rhs %v num samples %v\n", numRemainFromRhs, rhs.numSamples)
+			glog.Fatalf("remian from rhs %v num samples %v\n", numRemainFromRhs, rhs.numSamples)
 		}
 
 		tmp := make([]uint32, rhs.numSamples)
@@ -105,16 +105,16 @@ func (pi *PercentileInterval) Merge(rhs *PercentileInterval) {
 			numRemain++
 			tmp[idx] = tmp[uint(rhs.numSamples)-i-1]
 		}
-		pi.numSamples += uint16(numRemain)
+		pi.numSamples = uint16(numRemain)
 		if int(pi.numSamples) != pi.sampleSize {
-			log.Fatalf("numSamples %v sampleSize %v\n", pi.numSamples, pi.sampleSize)
+			glog.Fatalf("numSamples %v sampleSize %v\n", pi.numSamples, pi.sampleSize)
 		}
 	}
 	pi.numAdded += rhs.numAdded
 }
 func (pi *PercentileInterval) MergeWithExpectation(rhs *PercentileInterval, n uint16) {
 	if n > rhs.numSamples {
-		log.Fatalf("n %v rhs.numSamples %v\n", n, rhs.numSamples)
+		glog.Fatalf("n %v rhs.numSamples %v\n", n, rhs.numSamples)
 	}
 	pi.numAdded += rhs.numAdded
 	if pi.numSamples+n <= uint16(pi.sampleSize) && n == rhs.numSamples {
@@ -138,7 +138,7 @@ func (pi *PercentileInterval) MergeWithExpectation(rhs *PercentileInterval, n ui
 
 func (pi *PercentileInterval) Add32(x uint32) bool {
 	if int(pi.numSamples) >= pi.sampleSize {
-		fmt.Println("this interval was full")
+		glog.Error("this interval was full")
 		return false
 	}
 	pi.numAdded++

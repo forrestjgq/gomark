@@ -3,7 +3,7 @@ package gm
 type PercentileWinSampler interface {
 	SetWindow(window int)
 	SamplesInWindow(window int) []*PercentileSamples
-	ValueInWindow(window int) *PercentileSampleInRange
+	ValueInWindow(window int) PercentileSampleInRange
 }
 
 type PercentileWindow struct {
@@ -52,16 +52,16 @@ func (w *PercentileWindow) OnSample() {
 	}
 }
 
-func (w *PercentileWindow) GetSpanOf(window int) *PercentileSampleInRange {
+func (w *PercentileWindow) GetSpanOf(window int) PercentileSampleInRange {
 	return w.sampler.ValueInWindow(window)
 }
-func (w *PercentileWindow) GetSpan() *PercentileSampleInRange {
+func (w *PercentileWindow) GetSpan() PercentileSampleInRange {
 	return w.sampler.ValueInWindow(w.window)
 }
 func (w *PercentileWindow) ValueOf(window int) *PercentileSamples {
-	v := w.GetSpanOf(window)
+	v := w.GetSpanOf(window).value
 	if v != nil {
-		return v.value
+		return v
 	}
 	return &PercentileSamples{}
 }

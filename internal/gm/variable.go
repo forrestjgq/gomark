@@ -5,20 +5,20 @@ import "io"
 type DisplayFilter int
 
 const (
-	DisplayOnHTML DisplayFilter = iota + 1
+	DisplayOnNothing DisplayFilter = iota
+	DisplayOnHTML
 	DisplayOnPlainText
 	DisplayOnAll
-	DisplayOnNothing
 )
 
 type SeriesOption struct {
-	fixedLength, testOnly bool
+	FixedLength, TestOnly bool
 }
 
 func NewSeriesOption() *SeriesOption {
 	return &SeriesOption{
-		fixedLength: true,
-		testOnly:    false,
+		FixedLength: true,
+		TestOnly:    false,
 	}
 }
 
@@ -44,12 +44,15 @@ struct DumpOptions {
     std::string black_wildcards;
 };
 */
+type Dumper interface {
+	Dump(name, desc string) bool
+}
 type DumpOption struct {
-	quoteString    bool
-	questionMark   int8
-	displayFilter  DisplayFilter
-	whiteWildcards string
-	blackWildcards string
+	QuoteString    bool
+	QuestionMark   byte
+	DisplayFilter  DisplayFilter
+	WhiteWildcards string
+	BlackWildcards string
 }
 type VarBase struct {
 	name          string
@@ -69,6 +72,12 @@ func (vb *VarBase) Valid() bool {
 func (vb *VarBase) GetDisplayFilter() DisplayFilter {
 	return vb.displayFilter
 }
+
+type vbs []*VarBase
+
+func (v vbs) Len() int           { return len(v) }
+func (v vbs) Less(i, j int) bool { return v[i].name < v[j].name }
+func (v vbs) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
 
 type Variable interface {
 	VarBase() *VarBase

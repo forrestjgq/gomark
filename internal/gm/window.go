@@ -15,7 +15,7 @@ const (
 type winSampler interface {
 	SetWindow(window int)
 	SamplesInWindow(window int) []Value
-	ValueInWindow(window int) *sampleInRange
+	ValueInWindow(window int) sampleInRange
 }
 
 type Window struct {
@@ -74,24 +74,20 @@ func (w *Window) DescribeSeries(sw io.StringWriter, opt *SeriesOption) error {
 	if w.series == nil {
 		return errors.New("no series defined")
 	}
-	if !opt.testOnly {
+	if !opt.TestOnly {
 		w.series.Describe(sw, nil, w.converter)
 	}
 	return nil
 }
-func (w *Window) GetSpanOf(window int) *sampleInRange {
+func (w *Window) GetSpanOf(window int) sampleInRange {
 	return w.sampler.ValueInWindow(window)
 }
-func (w *Window) GetSpan() *sampleInRange {
+func (w *Window) GetSpan() sampleInRange {
 	return w.sampler.ValueInWindow(w.window)
 }
 
 func (w *Window) ValueOf(window int) Value {
-	v := w.GetSpanOf(window)
-	if v != nil {
-		return v.value
-	}
-	return Value{}
+	return w.GetSpanOf(window).value
 }
 func (w *Window) Value() Value {
 	return w.ValueOf(w.window)

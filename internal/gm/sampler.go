@@ -1,8 +1,9 @@
 package gm
 
 import (
-	"log"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 type sample struct {
@@ -142,19 +143,20 @@ func (rs *ReducerSampler) takeSample() {
 	s.ts = time.Now()
 	rs.q.push(s)
 }
-func (rs *ReducerSampler) ValueInWindow(window int) *sampleInRange {
+func (rs *ReducerSampler) ValueInWindow(window int) sampleInRange {
+	var s sampleInRange
+
 	if window <= 0 {
-		log.Fatal("invalid window size ", window)
-		return nil
+		glog.Fatal("invalid window size ", window)
+		return s
 	}
 
 	if rs.q.size() <= 1 {
-		return nil
+		return s
 	}
 
 	oldest := rs.q.oldestIn(window)
 	latest := rs.q.latest()
-	var s sampleInRange
 	op, inv := rs.r.Operators()
 	if inv == nil {
 		s.value = latest.value
@@ -169,11 +171,11 @@ func (rs *ReducerSampler) ValueInWindow(window int) *sampleInRange {
 		s.value = inv(latest.value, oldest.value)
 	}
 	s.du = latest.ts.Sub(oldest.ts)
-	return &s
+	return s
 }
 func (rs *ReducerSampler) SamplesInWindow(window int) (ret []Value) {
 	if window <= 0 {
-		log.Fatal("invalid window size ", window)
+		glog.Fatal("invalid window size ", window)
 		return
 	}
 
