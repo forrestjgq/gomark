@@ -33,7 +33,7 @@ func (q *sampleQueue) dec(n int) int {
 	return (n + len(q.q) - 1) % len(q.q)
 }
 func (q *sampleQueue) push(s sample) {
-	glog.Info("Push ", s)
+	//glog.Info("Push ", s)
 	if q.window+1 > len(q.q) {
 		if q.window == 0 {
 			q.window = 1
@@ -66,7 +66,7 @@ func (q *sampleQueue) push(s sample) {
 	last := q.inc(q.last())
 	q.q[last] = s
 	q.sz++
-	glog.Infof("q: %+v", q)
+	//glog.Infof("q: %+v", q)
 }
 func (q *sampleQueue) pop() sample {
 	if q.empty() {

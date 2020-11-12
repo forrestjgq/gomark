@@ -3,8 +3,6 @@ package gm
 import (
 	"io"
 	"strconv"
-
-	"github.com/golang/glog"
 )
 
 type WindowMaxer struct {
@@ -66,12 +64,7 @@ func NewWindowMaxerIn(name string, window int) *WindowMaxer {
 		SeriesInSecond,
 		maxOp,
 		func(left Value, right int) Value {
-			glog.Infof("value: %v / %d", left, right)
-			var v Value
-			if right != 0 {
-				v.x = left.x / int64(right)
-			}
-			return v
+			return left
 		})
 	wm.maxLatencyWindow.SetDescriber(f, func(v Value, idx int) string {
 		return f(v)
