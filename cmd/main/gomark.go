@@ -35,6 +35,14 @@ func main() {
 	//	time.Sleep(1000 * time.Millisecond)
 	//}
 
+	cnt := gomark.NewQPS("hello")
+	for {
+		v := rand.Int31n(10) + 1
+		cnt.Mark(v)
+		//glog.Infof("mark %d", v)
+		time.Sleep(time.Duration(rand.Intn(28)*3+17) * time.Millisecond)
+	}
+
 	lr := gomark.NewLatencyRecorder("hello")
 	for {
 		v := rand.Int31n(100) + 1

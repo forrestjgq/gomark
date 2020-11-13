@@ -36,6 +36,13 @@ func NewCounter(name string) gmi.Marker {
 	})
 	return ret
 }
+func NewQPS(name string) gmi.Marker {
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		ret = gm.NewQPS(name)
+	})
+	return ret
+}
 func NewWindowMaxer(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {

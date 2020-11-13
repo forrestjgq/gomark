@@ -181,7 +181,7 @@ func (rs *ReducerSampler) ValueInWindow(window int) sampleInRange {
 		}
 	} else {
 		s.value = inv(latest.value, oldest.value)
-		glog.Infof("Latest %v oldest %v now %v", latest, oldest, s.value)
+		//glog.Infof("Latest %v oldest %v now %v", latest, oldest, s.value)
 	}
 	s.du = latest.ts.Sub(oldest.ts)
 	return s

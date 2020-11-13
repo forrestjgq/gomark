@@ -178,7 +178,7 @@ func (s *IntSeries) appendDay(v Value) {
 }
 
 func NewIntSeries(op Operator, divOp OperatorInt) *IntSeries {
-	if op == nil || divOp == nil {
+	if op == nil {
 		return nil
 	}
 

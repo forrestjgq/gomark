@@ -3,6 +3,8 @@ package gm
 import (
 	"errors"
 	"io"
+
+	"github.com/golang/glog"
 )
 
 type SeriesFrequency int
@@ -77,6 +79,7 @@ func (w *Window) Describe(sw io.StringWriter, _ bool) {
 
 func (w *Window) DescribeSeries(sw io.StringWriter, opt *SeriesOption) error {
 	if w.series == nil {
+		glog.Info("No series")
 		return errors.New("no series defined")
 	}
 	if !opt.TestOnly {
