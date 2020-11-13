@@ -23,6 +23,7 @@ type winSampler interface {
 type Window struct {
 	vb           *VarBase
 	op           Operator
+	log          bool
 	seriesDivOp  OperatorInt
 	sampler      winSampler
 	window       int
@@ -61,11 +62,16 @@ func (w *Window) Push(v Mark) {
 
 func (w *Window) takeSample() {
 	if w.series != nil {
+		var v Value
 		if w.frequency == SeriesInSecond {
-			w.series.Append(w.ValueOf(1))
+			v = w.ValueOf(1)
 		} else {
-			w.series.Append(w.Value())
+			v = w.Value()
 		}
+		if w.log {
+			glog.Infof("window take sample value: %v", v)
+		}
+		w.series.Append(v)
 	}
 }
 

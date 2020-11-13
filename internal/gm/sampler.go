@@ -102,15 +102,7 @@ func (q *sampleQueue) oldestIn(n int) sample {
 	if q.empty() {
 		panic("queue is empty")
 	}
-	if n <= 0 {
-		return q.top()
-	}
-	if n >= q.size() {
-		return q.bottom()
-	}
-
-	idx := (n + len(q.q) - 1) % len(q.q)
-	return q.q[idx]
+	return q.q[q.start]
 }
 func (q *sampleQueue) size() int {
 	return q.sz
@@ -153,6 +145,7 @@ func (rs *ReducerSampler) takeSample() {
 		s.value = rs.r.GetValue()
 	}
 	s.ts = time.Now()
+	//glog.Infof("Push sample %v", s)
 	rs.q.push(s)
 }
 func (rs *ReducerSampler) ValueInWindow(window int) sampleInRange {
@@ -163,6 +156,7 @@ func (rs *ReducerSampler) ValueInWindow(window int) sampleInRange {
 		return s
 	}
 
+	//glog.Info("window: ", window)
 	if rs.q.size() <= 1 {
 		return s
 	}

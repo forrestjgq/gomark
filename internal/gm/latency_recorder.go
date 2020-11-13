@@ -259,10 +259,21 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 
 	lr.maxLatency = NewMaxer()
 	maxOp, _ := lr.maxLatency.r.Operators()
-	lr.maxLatencyWindow = NewWindow(window, lr.maxLatency.r.GetWindowSampler(), SeriesInSecond, maxOp, statOperatorInt)
-	lr.maxLatencyWindow.SetDescriber(f, func(v Value, idx int) string {
-		return f(v)
+	lr.maxLatencyWindow = NewWindow(window,
+		lr.maxLatency.r.GetWindowSampler(),
+		SeriesInSecond,
+		maxOp,
+		func(left Value, right int) Value {
+			return left
+		})
+	maxf := func(v Value) string {
+		//glog.Info(">> value: ", v)
+		return strconv.Itoa(int(v.x))
+	}
+	lr.maxLatencyWindow.SetDescriber(maxf, func(v Value, idx int) string {
+		return maxf(v)
 	})
+	lr.maxLatencyWindow.log = true
 
 	lr.count = NewPassiveStatus(func() Value {
 		return lr.latency.GetValue() // should use value.y
