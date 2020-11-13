@@ -24,9 +24,6 @@ func (c *CDF) Push(_ Mark) {
 	panic("CDF push should not be called")
 }
 
-func (c *CDF) OnSample() {
-}
-
 func (c *CDF) Describe(w io.StringWriter, _ bool) {
 	_, _ = w.WriteString("\"click to view\"")
 }
@@ -51,20 +48,20 @@ func (c *CDF) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 	n := 0
 	for i := 1; i < 10; i++ {
 		values[n].first = i * 10
-		values[n+1].second = samples.GetNumber(float64(i) * 0.1)
-		n += 2
+		values[n].second = samples.GetNumber(float64(i) * 0.1)
+		n++
 	}
 	for i := 91; i < 100; i++ {
 		values[n].first = i * 10
-		values[n+1].second = samples.GetNumber(float64(i) * 0.01)
-		n += 2
+		values[n].second = samples.GetNumber(float64(i) * 0.01)
+		n++
 	}
 	values[n].first = 100
-	values[n+1].second = samples.GetNumber(0.999)
-	n += 2
+	values[n].second = samples.GetNumber(0.999)
+	n++
 	values[n].first = 101
-	values[n+1].second = samples.GetNumber(0.9999)
-	n += 2
+	values[n].second = samples.GetNumber(0.9999)
+	n++
 
 	_, _ = w.WriteString("{\"label\":\"cdf\",\"data\":[")
 	for i := 0; i < n; i++ {

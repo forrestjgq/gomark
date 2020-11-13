@@ -1,6 +1,7 @@
 package gm
 
 import (
+	"io"
 	"math"
 	"reflect"
 	"sort"
@@ -329,6 +330,9 @@ func (ps *PercentileSamples) CombineOf(many []*PercentileSamples) {
 			ps.IntervalOf(i).MergeWithExpectation(invl, uint16(remain))
 		}
 	}
+}
+func (ps *PercentileSamples) Describe(w io.StringWriter) {
+
 }
 func NewPercentileSamples(sampleSize int) *PercentileSamples {
 	return &PercentileSamples{

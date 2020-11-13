@@ -23,9 +23,9 @@ type PercentileSampleInRange struct {
 	du    time.Duration
 }
 type PercentileSampleQueue struct {
-	q          []PercentileSample
-	end, start int // filled from start to end-1
-	window     int
+	q         []PercentileSample
+	sz, start int
+	window    int
 }
 
 func (q *PercentileSampleQueue) inc(n int) int {
@@ -46,22 +46,26 @@ func (q *PercentileSampleQueue) push(s PercentileSample) {
 		}
 		tq := make([]PercentileSample, newlen)
 		sz := q.size()
-		if q.end > q.start {
-			copy(tq[0:sz], q.q[q.start:q.end])
-		} else if q.end < q.start {
-			seg := sz - q.start
-			copy(tq[0:seg], q.q[q.start:])
-			copy(tq[seg:sz], q.q[0:q.end])
+		if sz > 0 {
+			last := q.last()
+			if last > q.start {
+				copy(tq[0:sz], q.q[q.start:last+1])
+			} else if last < q.start {
+				seg := sz - q.start
+				copy(tq[0:seg], q.q[q.start:])
+				copy(tq[seg:sz], q.q[0:last+1])
+			}
 		}
-		q.start, q.end = 0, sz
+		q.start = 0
+		q.q = tq
 	}
 
 	if q.full() {
 		_ = q.pop()
 	}
-	q.q[q.end].ts = s.ts
-	q.q[q.end].value = s.value.Dup()
-	q.end = q.inc(q.end)
+	last := q.inc(q.last())
+	q.q[last] = s
+	q.sz++
 }
 func (q *PercentileSampleQueue) pop() PercentileSample {
 	if q.empty() {
@@ -69,8 +73,9 @@ func (q *PercentileSampleQueue) pop() PercentileSample {
 	}
 	s := q.q[q.start]
 	q.start = q.inc(q.start)
+	q.sz--
 	if q.empty() {
-		q.end, q.start = 0, 0
+		q.start = 0
 	}
 	return s
 }
@@ -78,7 +83,7 @@ func (q *PercentileSampleQueue) top() PercentileSample {
 	if q.empty() {
 		panic("queue is empty")
 	}
-	return q.q[q.dec(q.end)]
+	return q.q[q.last()]
 }
 func (q *PercentileSampleQueue) latest() PercentileSample {
 	return q.top()
@@ -107,16 +112,16 @@ func (q *PercentileSampleQueue) oldestIn(n int) PercentileSample {
 	return q.q[idx]
 }
 func (q *PercentileSampleQueue) size() int {
-	if q.start == q.end {
-		return 0
-	}
-	return (q.end + len(q.q) - q.start) % len(q.q)
+	return q.sz
+}
+func (q *PercentileSampleQueue) last() int {
+	return (q.start + q.sz - 1) % len(q.q)
 }
 func (q *PercentileSampleQueue) full() bool {
 	return q.size() >= len(q.q)
 }
 func (q *PercentileSampleQueue) empty() bool {
-	return q.start == q.end
+	return q.sz == 0
 }
 func (q *PercentileSampleQueue) setWindow(window int) {
 	if window > q.window {
@@ -125,8 +130,15 @@ func (q *PercentileSampleQueue) setWindow(window int) {
 }
 
 type PercentileReducerSampler struct {
-	r PercentileReducer
-	q PercentileSampleQueue
+	dis disposer
+	r   PercentileReducer
+	q   PercentileSampleQueue
+}
+
+func (rs *PercentileReducerSampler) dispose() {
+	if rs.dis != nil {
+		rs.dis()
+	}
 }
 
 func (rs *PercentileReducerSampler) SetWindow(window int) {

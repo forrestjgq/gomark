@@ -1,5 +1,9 @@
 package gm
 
+import (
+	"io"
+)
+
 type PercentileWinSampler interface {
 	SetWindow(window int)
 	SamplesInWindow(window int) []*PercentileSamples
@@ -7,26 +11,26 @@ type PercentileWinSampler interface {
 }
 
 type PercentileWindow struct {
-	op          PercentileOperator
-	seriesDivOp PercentileOperatorInt
-	sampler     PercentileWinSampler
-	window      int
-	series      *PercentileSeries
-	frequency   SeriesFrequency
+	vb           *VarBase
+	op           PercentileOperator
+	seriesDivOp  PercentileOperatorInt
+	sampler      PercentileWinSampler
+	window       int
+	series       *PercentileSeries
+	frequency    SeriesFrequency
+	removeSample disposer
 }
 
-func (w *PercentileWindow) Name() string {
-	panic("implement me")
+func (w *PercentileWindow) VarBase() *VarBase {
+	return w.vb
 }
-
-func (w *PercentileWindow) Identity() Identity {
-	panic("implement me")
-}
-
 func (w *PercentileWindow) Push(v Mark) {
 	panic("implement me")
 }
 func (w *PercentileWindow) Dispose() []Identity {
+	if w.series != nil && w.removeSample != nil {
+		w.removeSample()
+	}
 	w.series = nil
 	w.sampler = nil
 	w.op = nil
@@ -35,14 +39,17 @@ func (w *PercentileWindow) Dispose() []Identity {
 	return nil
 }
 
-func (w *PercentileWindow) OnExpose() {
+func (w *PercentileWindow) OnExpose(vb *VarBase) {
+	w.vb = vb
 	// todo
 	if w.series == nil && flagSaveSeries {
 		w.series = NewPercentileSeries(w.op, w.seriesDivOp)
+		w.removeSample = AddSampler(w)
 	}
+	panic("should not be called")
 }
 
-func (w *PercentileWindow) OnSample() {
+func (w *PercentileWindow) takeSample() {
 	if w.series != nil {
 		if w.frequency == SeriesInSecond {
 			w.series.Append(w.ValueOf(1))
@@ -50,8 +57,17 @@ func (w *PercentileWindow) OnSample() {
 			w.series.Append(w.Value())
 		}
 	}
+	panic("should not be called")
 }
 
+func (w *PercentileWindow) Describe(sw io.StringWriter, _ bool) {
+	panic("should not be called")
+}
+
+func (w *PercentileWindow) DescribeSeries(sw io.StringWriter, opt *SeriesOption) error {
+	panic("should not be called")
+	return nil
+}
 func (w *PercentileWindow) GetSpanOf(window int) PercentileSampleInRange {
 	return w.sampler.ValueInWindow(window)
 }
@@ -77,7 +93,7 @@ func (w *PercentileWindow) GetSamples() []*PercentileSamples {
 
 func NewPercentileWindow(window int, sampler PercentileWinSampler, freq SeriesFrequency, op PercentileOperator, seriesDivOp PercentileOperatorInt) *PercentileWindow {
 	if window <= 0 {
-		panic("window size must > 0")
+		window = defaultDumpInterval
 	}
 	return &PercentileWindow{
 		op:          op,

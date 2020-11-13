@@ -111,7 +111,7 @@ func (s *server) describeID(id Identity, w io.StringWriter, quoteString bool, fi
 	if vb, ok := s.all[id]; ok {
 		return s.describe(vb, w, quoteString, filter)
 	}
-	return fmt.Errorf("var not exist: %s", id)
+	return fmt.Errorf("var not exist: %d", id)
 }
 func (s *server) describeVar(name string, w io.StringWriter, quoteString bool, filter DisplayFilter) error {
 	for _, vb := range s.all {

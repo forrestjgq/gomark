@@ -129,8 +129,10 @@ func (s *IntSeries) appendSecond(v Value) {
 			acc = s.op(acc, s.getSecond(i))
 		}
 
-		m := s.divOp(acc, 60)
-		s.appendMinute(m)
+		if s.divOp != nil {
+			acc = s.divOp(acc, 60)
+		}
+		s.appendMinute(acc)
 	}
 }
 func (s *IntSeries) appendMinute(v Value) {
@@ -144,8 +146,10 @@ func (s *IntSeries) appendMinute(v Value) {
 			acc = s.op(acc, s.getMinute(i))
 		}
 
-		m := s.divOp(acc, 60)
-		s.appendHour(m)
+		if s.divOp != nil {
+			acc = s.divOp(acc, 60)
+		}
+		s.appendHour(acc)
 	}
 }
 func (s *IntSeries) appendHour(v Value) {
@@ -159,8 +163,10 @@ func (s *IntSeries) appendHour(v Value) {
 			acc = s.op(acc, s.getHour(i))
 		}
 
-		m := s.divOp(acc, 24)
-		s.appendDay(m)
+		if s.divOp != nil {
+			acc = s.divOp(acc, 24)
+		}
+		s.appendDay(acc)
 	}
 }
 func (s *IntSeries) appendDay(v Value) {

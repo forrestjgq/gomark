@@ -59,40 +59,6 @@ void Series<T, Op>::describe(std::ostream& os,
 }
 
 */
-/*
-func (s *PercentileSeries) GetTrend() *PercentileTrend {
-	t := &PercentileTrend{
-		Label: "trend",
-		Data:  make([][]PercentileSamples, 60+60+30+24),
-	}
-
-	secondBegin := int(s.second)
-	minuteBegin := int(s.minute)
-	hourBegin := int(s.hour)
-	dayBegin := int(s.day)
-
-	c := int64(0)
-	for i := 0; i < 30; i++ {
-		t.Data[c] = []PercentileSamples{c, s.getDay(int8((i + dayBegin) % 30))}
-		c++
-	}
-	for i := 0; i < 24; i++ {
-		t.Data[c] = []int64{c, s.getHour(int8((i + hourBegin) % 24))}
-		c++
-	}
-	for i := 0; i < 60; i++ {
-		t.Data[c] = []int64{c, s.getMinute(int8((i + minuteBegin) % 60))}
-		c++
-	}
-	for i := 0; i < 60; i++ {
-		t.Data[c] = []int64{c, s.getSecond(int8((i + secondBegin) % 60))}
-		c++
-	}
-
-	return t
-}
-
-*/
 func (s *PercentileSeries) getSecond(idx int8) *PercentileSamples {
 	return s.data[idx]
 }

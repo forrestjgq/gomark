@@ -12,17 +12,24 @@ type PassiveStatus struct {
 	op, invOp   Operator
 	seriesDivOp OperatorInt
 
-	callback   PassiveCallback
-	sampler    *ReducerSampler
-	series     *IntSeries
-	names      []string
-	serializer ValueSerializer
-	converter  ValueConverter
+	callback      PassiveCallback
+	sampler       *ReducerSampler
+	series        *IntSeries
+	names         []string
+	serializer    ValueSerializer
+	converter     ValueConverter
+	seriesDispose disposer
 }
 
 func (p *PassiveStatus) Dispose() []Identity {
-	p.sampler.dispose()
-	p.sampler = nil
+	if p.sampler != nil {
+		p.sampler.dispose()
+		p.sampler = nil
+	}
+	if p.seriesDispose != nil {
+		p.seriesDispose()
+		p.seriesDispose = nil
+	}
 	p.series = nil
 	return nil
 }
@@ -44,13 +51,11 @@ func (p *PassiveStatus) OnExpose(vb *VarBase) error {
 	p.vb = vb
 	if p.series == nil && flagSaveSeries {
 		p.series = NewIntSeries(p.op, p.seriesDivOp)
+		p.seriesDispose = AddSampler(p)
 	}
 	return nil
 }
-func (p *PassiveStatus) OnSample() {
-	if p.sampler != nil {
-		p.sampler.takeSample()
-	}
+func (p *PassiveStatus) takeSample() {
 	if p.series != nil {
 		p.series.Append(p.GetValue())
 	}

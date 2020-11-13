@@ -29,6 +29,13 @@ func NewAdder(name string) gmi.Marker {
 	})
 	return ret
 }
+func NewCounter(name string) gmi.Marker {
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		ret = gm.NewCounter(name)
+	})
+	return ret
+}
 func NewWindowMaxer(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {

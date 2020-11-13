@@ -40,6 +40,7 @@ func (lr *LatencyRecorder) Cancel() {
 func (lr *LatencyRecorder) Dispose() []Identity {
 	lr.latency.Dispose()
 	lr.maxLatency.Dispose()
+	lr.latencyPercentileWindow.Dispose()
 
 	lr.latency = nil
 	lr.maxLatency = nil
