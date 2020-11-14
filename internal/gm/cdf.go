@@ -52,7 +52,7 @@ func (c *CDF) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 		n++
 	}
 	for i := 91; i < 100; i++ {
-		values[n].first = i * 10
+		values[n].first = i
 		values[n].second = samples.GetNumber(float64(i) * 0.01)
 		n++
 	}
