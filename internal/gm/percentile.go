@@ -1,6 +1,8 @@
 package gm
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"math"
 	"reflect"
@@ -177,6 +179,24 @@ func (pi *PercentileInterval) SameOf(rhs *PercentileInterval) bool {
 		reflect.DeepEqual(pi.samples[0:pi.numSamples], rhs.samples[0:rhs.numSamples])
 }
 
+func (pi *PercentileInterval) check() bool {
+
+	n := pi.samples[0]
+	for i := 1; i < int(pi.numSamples); i++ {
+		if pi.samples[i] != n+uint32(i) {
+			return false
+		}
+	}
+	return true
+}
+func (pi *PercentileInterval) Describe(w io.StringWriter) {
+	_, _ = w.WriteString(fmt.Sprintf("(num_added=%d)[", pi.AddedCount()))
+	for i := 0; i < int(pi.numSamples); i++ {
+		_, _ = w.WriteString(fmt.Sprintf(" %d", pi.samples[i]))
+	}
+	_, _ = w.WriteString("]\n")
+}
+
 func newPercentileInterval(sampleSize int) *PercentileInterval {
 	return &PercentileInterval{
 		sampleSize: sampleSize,
@@ -281,7 +301,7 @@ func (ps *PercentileSamples) Merge(rhs *PercentileSamples) {
 }
 func (ps *PercentileSamples) IntervalOf(idx int) *PercentileInterval {
 	if ps.intervals[idx] == nil {
-		ps.intervals[idx] = newPercentileInterval(idx)
+		ps.intervals[idx] = newPercentileInterval(ThreadLocalPercentileSamplesSize)
 	}
 	return ps.intervals[idx]
 }
@@ -332,7 +352,14 @@ func (ps *PercentileSamples) CombineOf(many []*PercentileSamples) {
 	}
 }
 func (ps *PercentileSamples) Describe(w io.StringWriter) {
-
+	_, _ = w.WriteString(fmt.Sprintf("{num_added=%d", ps.numAdded))
+	for i := 0; i < NumIntervals; i++ {
+		if ps.intervals[i] != nil && !ps.intervals[i].Empty() {
+			_, _ = w.WriteString(fmt.Sprintf(" interval[%d]=", i))
+			ps.intervals[i].Describe(w)
+		}
+	}
+	_, _ = w.WriteString("}")
 }
 func NewPercentileSamples(sampleSize int) *PercentileSamples {
 	return &PercentileSamples{
@@ -394,15 +421,30 @@ func (p *Percentile) intervalIdx(v Mark) (latency int64, idx int) {
 }
 func (p *Percentile) Push(v Mark) {
 	latency, idx := p.intervalIdx(v)
+	//glog.Infof("latency %v idx: %v", latency, idx)
 	interval := p.local.IntervalOf(idx)
 	if interval.Full() {
+		g := p.value.IntervalOf(idx)
 		p.value.IntervalOf(idx).Merge(interval)
 		p.value.numAdded += int(interval.numAdded)
 		p.local.numAdded -= int(interval.AddedCount())
+		if !g.check() {
+			buf := &bytes.Buffer{}
+			buf.WriteString(fmt.Sprintf("mark: %d\n", v))
+			g.Describe(buf)
+			glog.Info(buf.String())
+		}
 		interval.Clear()
 	}
 	interval.Add64(latency)
 	p.local.numAdded++
+
+	if !interval.check() {
+		buf := &bytes.Buffer{}
+		buf.WriteString(fmt.Sprintf("mark: %d\n", v))
+		interval.Describe(buf)
+		glog.Info(buf.String())
+	}
 }
 func (p *Percentile) Reset() *PercentileSamples {
 	ret := p.value.Dup()

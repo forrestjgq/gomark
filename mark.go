@@ -50,3 +50,9 @@ func NewWindowMaxer(name string) gmi.Marker {
 	})
 	return ret
 }
+
+func NewPercentile() interface {
+	Push(v gm.Mark)
+} {
+	return gm.NewPercentile()
+}
