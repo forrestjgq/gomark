@@ -1,7 +1,6 @@
 package gm
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"math"
@@ -282,6 +281,7 @@ func (ps *PercentileSamples) GetNumber(ratio float64) uint32 {
 			if samplen != 0 {
 				sampleIdx = samplen - 1
 			}
+			//glog.Infof("get sample from interval %d sample size %d at idx %d", k, v.sampleSize,  sampleIdx)
 			return v.SampleAt(sampleIdx)
 		}
 		n -= int(v.AddedCount())
@@ -301,7 +301,7 @@ func (ps *PercentileSamples) Merge(rhs *PercentileSamples) {
 }
 func (ps *PercentileSamples) IntervalOf(idx int) *PercentileInterval {
 	if ps.intervals[idx] == nil {
-		ps.intervals[idx] = newPercentileInterval(ThreadLocalPercentileSamplesSize)
+		ps.intervals[idx] = newPercentileInterval(ps.sampleSize)
 	}
 	return ps.intervals[idx]
 }
@@ -425,26 +425,26 @@ func (p *Percentile) Push(v Mark) {
 	interval := p.local.IntervalOf(idx)
 	if interval.Full() {
 		g := p.value.IntervalOf(idx)
-		p.value.IntervalOf(idx).Merge(interval)
+		g.Merge(interval)
 		p.value.numAdded += int(interval.numAdded)
 		p.local.numAdded -= int(interval.AddedCount())
-		if !g.check() {
-			buf := &bytes.Buffer{}
-			buf.WriteString(fmt.Sprintf("mark: %d\n", v))
-			g.Describe(buf)
-			glog.Info(buf.String())
-		}
+		//if flagPecentileLog && !g.check() {
+		//	buf := &bytes.Buffer{}
+		//	buf.WriteString(fmt.Sprintf("mark: %d\n", v))
+		//	g.Describe(buf)
+		//	glog.Info(buf.String())
+		//}
 		interval.Clear()
 	}
 	interval.Add64(latency)
 	p.local.numAdded++
 
-	if !interval.check() {
-		buf := &bytes.Buffer{}
-		buf.WriteString(fmt.Sprintf("mark: %d\n", v))
-		interval.Describe(buf)
-		glog.Info(buf.String())
-	}
+	//if flagPecentileLog && !interval.check() {
+	//	buf := &bytes.Buffer{}
+	//	buf.WriteString(fmt.Sprintf("mark: %d\n", v))
+	//	interval.Describe(buf)
+	//	glog.Info(buf.String())
+	//}
 }
 func (p *Percentile) Reset() *PercentileSamples {
 	ret := p.value.Dup()
