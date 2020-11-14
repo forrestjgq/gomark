@@ -118,6 +118,7 @@ func NewWindow(window int, sampler winSampler, freq SeriesFrequency, op Operator
 	if window <= 0 {
 		window = defaultDumpInterval
 	}
+	sampler.SetWindow(window)
 	return &Window{
 		op:          op,
 		seriesDivOp: seriesDivOp,

@@ -101,15 +101,12 @@ func (q *PercentileSampleQueue) oldestIn(n int) PercentileSample {
 	if q.empty() {
 		panic("queue is empty")
 	}
-	if n <= 0 {
-		return q.top()
+	if n < 0 {
+		n = 0
+	} else if n >= q.size() {
+		n = q.size()-1
 	}
-	if n >= q.size() {
-		return q.bottom()
-	}
-
-	idx := (n + len(q.q) - 1) % len(q.q)
-	return q.q[idx]
+	return q.q[(q.start +n) % len(q.q)]
 }
 func (q *PercentileSampleQueue) size() int {
 	return q.sz
@@ -212,5 +209,6 @@ func NewPercentileReducerSampler(r PercentileReducer) *PercentileReducerSampler 
 		r: r,
 	}
 	s.SetWindow(1)
+	s.dis = AddSampler(s)
 	return s
 }

@@ -95,6 +95,7 @@ func NewPercentileWindow(window int, sampler PercentileWinSampler, freq SeriesFr
 	if window <= 0 {
 		window = defaultDumpInterval
 	}
+	sampler.SetWindow(window)
 	return &PercentileWindow{
 		op:          op,
 		seriesDivOp: seriesDivOp,

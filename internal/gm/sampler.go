@@ -102,7 +102,12 @@ func (q *sampleQueue) oldestIn(n int) sample {
 	if q.empty() {
 		panic("queue is empty")
 	}
-	return q.q[q.start]
+	if n < 0 {
+		n = 0
+	} else if n >= q.size() {
+		n = q.size()-1
+	}
+	return q.q[(q.start +n) % len(q.q)]
 }
 func (q *sampleQueue) size() int {
 	return q.sz
