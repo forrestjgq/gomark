@@ -1,3 +1,4 @@
+// Package gmi defines Marker to represent each variable by interface.
 package gmi
 
 // Marker is an interface to provide variable marking.

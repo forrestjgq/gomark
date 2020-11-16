@@ -37,7 +37,7 @@ func (l *Latency) Cancel() {
 	l.marker = nil
 }
 
-// Create a latency for a Latency Recorder created by NewLatencyRecorder.
+// NewLatency create a latency for a Latency Recorder created by NewLatencyRecorder.
 func NewLatency(marker gmi.Marker) *Latency {
 	return &Latency{
 		marker: marker,
