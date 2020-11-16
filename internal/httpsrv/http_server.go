@@ -38,8 +38,8 @@ func Start(port int) {
 	server.r = r
 
 	go func() {
-		http.ListenAndServe(":"+strconv.Itoa(port), r)
-		glog.Info("server stops")
+		err := http.ListenAndServe(":"+strconv.Itoa(port), r)
+		glog.Info("server stops, error: ", err)
 	}()
 }
 

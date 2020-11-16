@@ -6,6 +6,7 @@ import (
 	"github.com/forrestjgq/gomark/internal/httpsrv"
 )
 
+// StartHTTPServer will create an http server for gomark.
 func StartHTTPServer(port int) {
 	httpsrv.Start(port)
 }
