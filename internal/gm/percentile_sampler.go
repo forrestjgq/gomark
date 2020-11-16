@@ -132,7 +132,7 @@ type PercentileReducerSampler struct {
 	q   PercentileSampleQueue
 }
 
-func (rs *PercentileReducerSampler) dispose() {
+func (rs *PercentileReducerSampler) Dispose() {
 	if rs.dis != nil {
 		rs.dis()
 	}

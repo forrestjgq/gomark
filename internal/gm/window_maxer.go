@@ -25,6 +25,9 @@ func NewWindowMaxerIn(name string, window int) (*Window, error) {
 		return f(v)
 	})
 	maxLatencyWindow.SetReceiver(maxLatency)
+	maxLatencyWindow.VarBase().AddDisposer(func() {
+		maxLatency.Dispose()
+	})
 
 	return maxLatencyWindow, nil
 }

@@ -16,7 +16,7 @@ func NewQPS(prefix, name string, filter DisplayFilter, freq SeriesFrequency) (*P
 
 	window := defaultDumpInterval
 
-	latencyWindow, err := NewWindow(name, "latency", DisplayOnAll, window, latency.GetWindowSampler(), SeriesInSecond, op, nil)
+	latencyWindow, err := NewWindow(prefix, name, DisplayOnAll, window, latency.GetWindowSampler(), SeriesInSecond, op, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +49,9 @@ func NewQPS(prefix, name string, filter DisplayFilter, freq SeriesFrequency) (*P
 	}
 	qps.setReceiver(latency)
 	qps.vb.AddChild(latencyWindow.vb.ID())
+	qps.vb.AddDisposer(func() {
+		latency.Dispose()
+	})
 	qps.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})

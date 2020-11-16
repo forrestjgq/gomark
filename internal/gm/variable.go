@@ -24,28 +24,6 @@ func NewSeriesOption() *SeriesOption {
 	}
 }
 
-/*
-struct DumpOptions {
-    // Constructed with default options.
-    DumpOptions();
-
-    // If this is true, string-type values will be quoted.
-    bool quote_string;
-
-    // The ? in wildcards. Wildcards in URL need to use another character
-    // because ? is reserved.
-    char question_mark;
-
-    // Dump variables with matched display_filter
-    DisplayFilter display_filter;
-
-    // Name matched by these wildcards (or exact names) are kept.
-    std::string white_wildcards;
-
-    // Name matched by these wildcards (or exact names) are skipped.
-    std::string black_wildcards;
-};
-*/
 type Dumper interface {
 	Dump(name, desc string) bool
 }
@@ -56,11 +34,15 @@ type DumpOption struct {
 	WhiteWildcards string
 	BlackWildcards string
 }
+type Pushable interface {
+	Push(v Mark)
+}
 type VarBase struct {
 	name          string
 	id            Identity
 	displayFilter DisplayFilter
 	child         []Identity
+	disposer  []disposer
 }
 
 func (vb *VarBase) Mark(n int32) {
@@ -81,6 +63,9 @@ func (vb *VarBase) Name() string {
 }
 func (vb *VarBase) ID() Identity {
 	return vb.id
+}
+func (vb *VarBase) AddDisposer(d disposer) {
+	vb.disposer = append(vb.disposer, d)
 }
 func (vb *VarBase) AddChild(id ...Identity) {
 	vb.child = append(vb.child, id...)

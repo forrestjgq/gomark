@@ -50,6 +50,16 @@ func NewQPS(name string) gmi.Marker {
 	})
 	return ret
 }
+func NewMaxer(name string) gmi.Marker {
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		w, err := gm.NewMaxerWithName(name)
+		if err == nil {
+			ret = w.VarBase()
+		}
+	})
+	return ret
+}
 func NewWindowMaxer(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
@@ -63,6 +73,7 @@ func NewWindowMaxer(name string) gmi.Marker {
 
 func NewPercentile() interface {
 	Push(v gm.Mark)
+	Dispose()
 } {
 	return gm.NewPercentile()
 }

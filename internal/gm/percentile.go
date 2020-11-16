@@ -419,6 +419,11 @@ func (p *Percentile) intervalIdx(v Mark) (latency int64, idx int) {
 	idx = int(log2(uint32(latency)) - 1)
 	return
 }
+func (p *Percentile) Dispose() {
+	if p.sampler != nil {
+		p.sampler.Dispose()
+	}
+}
 func (p *Percentile) Push(v Mark) {
 	latency, idx := p.intervalIdx(v)
 	//glog.Infof("latency %v idx: %v", latency, idx)

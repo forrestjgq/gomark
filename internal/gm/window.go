@@ -50,10 +50,6 @@ func (w *Window) VarBase() *VarBase {
 	return w.vb
 }
 
-func (w *Window) OnExpose(vb *VarBase) error {
-	w.vb = vb
-	return nil
-}
 
 func (w *Window) Push(v Mark) {
 	if w.receiver != nil {

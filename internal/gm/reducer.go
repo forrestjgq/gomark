@@ -27,7 +27,9 @@ func (r *Reducer) GetValue() Value {
 }
 
 func (r *Reducer) Dispose() {
-	r.sampler.dispose()
+	if r.sampler != nil {
+		r.sampler.dispose()
+	}
 }
 func (r *Reducer) Reset() Value {
 	v := r.value

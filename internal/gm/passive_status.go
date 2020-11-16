@@ -7,9 +7,6 @@ import (
 
 type PassiveCallback func() Value
 
-type Pushable interface {
-	Push(v Mark)
-}
 type PassiveStatus struct {
 	vb          *VarBase
 	receiver    Pushable

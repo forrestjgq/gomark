@@ -29,6 +29,7 @@ type LatencyRecorder struct {
 }
 
 func (lr *LatencyRecorder) Dispose() {
+	lr.latencyPercentile.Dispose()
 	lr.latency.Dispose()
 	lr.maxLatency.Dispose()
 	lr.latencyPercentileWindow.Dispose()

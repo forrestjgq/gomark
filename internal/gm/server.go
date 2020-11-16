@@ -73,6 +73,7 @@ func (s *server) addSample(smp sampler) Identity {
 }
 func (s *server) sample() {
 	for _, smp := range s.samplers {
+		//glog.Infof("Take sample for %T", smp)
 		smp.takeSample()
 	}
 }
@@ -87,6 +88,11 @@ func (s *server) remove(id Identity) {
 		ids := v.VarBase().child
 		for _, sub := range ids {
 			s.remove(sub)
+		}
+		for _, d := range v.VarBase().disposer {
+			if d != nil {
+				d()
+			}
 		}
 		delete(s.all, id)
 	}
@@ -293,4 +299,28 @@ func AddSampler(s sampler) disposer {
 
 func RemoteCall(call func()) {
 	callFunc(call)
+}
+
+func MakeSureEmpty()  {
+	fail := false
+	if len(srv.samplers) > 0 {
+		glog.Errorf("sampler not cleared:")
+		for _, s := range srv.samplers {
+			glog.Infof("    %T", s)
+		}
+
+		fail =true
+	}
+
+	if len(srv.all) > 0 {
+		glog.Errorf("variables not cleared:")
+		for _, v := range srv.all {
+			glog.Infof("    name: %s type: %T", v.VarBase().Name(), v)
+		}
+		fail = true
+	}
+
+	if fail {
+		glog.Fatalf("gomark check fail")
+	}
 }
