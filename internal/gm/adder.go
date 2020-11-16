@@ -3,8 +3,6 @@ package gm
 import (
 	"io"
 	"strconv"
-
-	"github.com/forrestjgq/gomark/gmi"
 )
 
 type Adder struct {
@@ -14,12 +12,6 @@ type Adder struct {
 
 func (a *Adder) VarBase() *VarBase {
 	return a.vb
-}
-
-func (a *Adder) OnExpose(vb *VarBase) error {
-	a.vb = vb
-	a.r.OnExpose()
-	return nil
 }
 
 func (a *Adder) Dispose() []Identity {
@@ -44,25 +36,15 @@ func (a *Adder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 	})
 }
 
-/********************************************************************************
-                       Implementation of gmi.Marker
-********************************************************************************/
-
-// Mark a value
-func (a *Adder) Mark(n int32) {
-	if a.vb != nil && a.vb.Valid() {
-		s := makeStub(a.vb.ID(), Mark(n))
-		PushStub(s)
-	}
+func NewAdderNoExpose() (*Adder, error) {
+	return NewAdder("", "", DisplayOnNothing)
 }
-func (a *Adder) Cancel() {
-	if a.vb != nil && a.vb.Valid() {
-		RemoveVariable(a.vb.ID())
-	}
+func NewAdderWithName(name string) (*Adder, error) {
+	return NewAdder("", name, DisplayOnAll)
 }
 
 // NewAdder create an adder
-func NewAdder(name string) (gmi.Marker, error) {
+func NewAdder(prefix, name string, filter DisplayFilter) (*Adder, error) {
 	r := NewReducer(
 		func(dst, src Value) Value {
 			return dst.Add(&src)
@@ -83,9 +65,13 @@ func NewAdder(name string) (gmi.Marker, error) {
 		r: r,
 	}
 
-	err := Expose("", name, DisplayOnAll, adder)
-	if err != nil {
-		return nil, err
+	if len(name) > 0 {
+		var err error
+		adder.vb, err = Expose("", name, filter, adder)
+		if err != nil {
+			return nil, err
+		}
+		adder.r.OnExpose()
 	}
 	return adder, nil
 }

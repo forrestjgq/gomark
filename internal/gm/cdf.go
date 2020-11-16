@@ -74,11 +74,19 @@ func (c *CDF) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 	return nil
 }
 
-func (c *CDF) OnExpose(vb *VarBase) error {
-	c.vb = vb
-	return nil
+func NewCDFNoExpose(w *PercentileWindow) (*CDF, error) {
+	return NewCDF("", "", DisplayOnNothing, w)
 }
-
-func newCDF(w *PercentileWindow) *CDF {
-	return &CDF{w: w}
+func NewCDFWithName(name string, w *PercentileWindow) (*CDF, error) {
+	return NewCDF("", name, DisplayOnAll, w)
+}
+func NewCDF(prefix, name string, filter DisplayFilter, w *PercentileWindow) (*CDF, error) {
+	c := &CDF{w: w}
+	if len(name) > 0 {
+		var err error
+		if c.vb, err = Expose(prefix, name, filter, c); err != nil {
+			return nil, err
+		}
+	}
+	return c, nil
 }

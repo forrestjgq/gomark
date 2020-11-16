@@ -32,8 +32,12 @@ type Window struct {
 	serializer   ValueSerializer
 	converter    ValueConverter
 	removeSample disposer
+	receiver     Pushable
 }
 
+func (w *Window) SetReceiver(reciever Pushable) {
+	w.receiver = reciever
+}
 func (w *Window) Dispose() []Identity {
 	if w.series != nil && w.removeSample != nil {
 		w.removeSample()
@@ -49,15 +53,13 @@ func (w *Window) VarBase() *VarBase {
 
 func (w *Window) OnExpose(vb *VarBase) error {
 	w.vb = vb
-	if w.series == nil && flagSaveSeries {
-		w.series = NewIntSeries(w.op, w.seriesDivOp)
-		w.removeSample = AddSampler(w)
-	}
 	return nil
 }
 
 func (w *Window) Push(v Mark) {
-	panic("implement me")
+	if w.receiver != nil {
+		w.receiver.Push(v)
+	}
 }
 
 func (w *Window) takeSample() {
@@ -114,16 +116,36 @@ func (w *Window) GetSamples() []Value {
 	return w.sampler.SamplesInWindow(w.window)
 }
 
-func NewWindow(window int, sampler winSampler, freq SeriesFrequency, op Operator, seriesDivOp OperatorInt) *Window {
+func NewWindowNoExpose(window int, sampler winSampler, op Operator) (*Window, error) {
+	return NewWindow("", "", DisplayOnNothing, window, sampler, SeriesInSecond, op, nil)
+}
+func NewWindowWithName(name string, window int, sampler winSampler, op Operator, seriesDivOp OperatorInt) (*Window, error) {
+	return NewWindow("", name, DisplayOnAll, window, sampler, SeriesInSecond, op, seriesDivOp)
+}
+func NewWindow(prefix, name string, filter DisplayFilter, window int,
+	sampler winSampler, freq SeriesFrequency, op Operator, seriesDivOp OperatorInt) (*Window, error) {
 	if window <= 0 {
 		window = defaultDumpInterval
 	}
 	sampler.SetWindow(window)
-	return &Window{
+	w := &Window{
 		op:          op,
 		seriesDivOp: seriesDivOp,
 		window:      window,
 		frequency:   freq,
 		sampler:     sampler,
 	}
+	if len(name) > 0 {
+		var err error
+		if w.vb, err = Expose(prefix, name, filter, w); err != nil {
+			return nil, err
+		}
+
+		if w.series == nil && flagSaveSeries {
+			w.series = NewIntSeries(w.op, w.seriesDivOp)
+			w.removeSample = AddSampler(w)
+		}
+	}
+
+	return w, nil
 }

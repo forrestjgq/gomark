@@ -42,10 +42,6 @@ func (w *PercentileWindow) Dispose() []Identity {
 func (w *PercentileWindow) OnExpose(vb *VarBase) {
 	w.vb = vb
 	// todo
-	if w.series == nil && flagSaveSeries {
-		w.series = NewPercentileSeries(w.op, w.seriesDivOp)
-		w.removeSample = AddSampler(w)
-	}
 	panic("should not be called")
 }
 
@@ -91,16 +87,34 @@ func (w *PercentileWindow) GetSamples() []*PercentileSamples {
 	return w.sampler.SamplesInWindow(w.window)
 }
 
-func NewPercentileWindow(window int, sampler PercentileWinSampler, freq SeriesFrequency, op PercentileOperator, seriesDivOp PercentileOperatorInt) *PercentileWindow {
+func NewPercentileWindowNoExpose(window int, sampler PercentileWinSampler, op PercentileOperator) (*PercentileWindow, error) {
+	return NewPercentileWindow("", "", DisplayOnNothing, window, sampler, SeriesInSecond, op, nil)
+}
+func NewPercentileWindowWithName(name string, window int, sampler PercentileWinSampler, op PercentileOperator, seriesDivOp PercentileOperatorInt) (*PercentileWindow, error) {
+	return NewPercentileWindow("", name, DisplayOnNothing, window, sampler, SeriesInSecond, op, seriesDivOp)
+}
+func NewPercentileWindow(prefix, name string, filter DisplayFilter,
+	window int, sampler PercentileWinSampler, freq SeriesFrequency, op PercentileOperator, seriesDivOp PercentileOperatorInt) (*PercentileWindow, error) {
 	if window <= 0 {
 		window = defaultDumpInterval
 	}
 	sampler.SetWindow(window)
-	return &PercentileWindow{
+	w := &PercentileWindow{
 		op:          op,
 		seriesDivOp: seriesDivOp,
 		window:      window,
 		frequency:   freq,
 		sampler:     sampler,
 	}
+	if len(name) > 0 {
+		var err error
+		if w.vb, err = Expose(prefix, name, filter, w); err != nil {
+			return nil, err
+		}
+		if w.series == nil && flagSaveSeries {
+			w.series = NewPercentileSeries(w.op, w.seriesDivOp)
+			w.removeSample = AddSampler(w)
+		}
+	}
+	return w, nil
 }

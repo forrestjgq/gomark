@@ -1,6 +1,8 @@
 package gm
 
-import "io"
+import (
+	"io"
+)
 
 type DisplayFilter int
 
@@ -58,6 +60,20 @@ type VarBase struct {
 	name          string
 	id            Identity
 	displayFilter DisplayFilter
+	child         []Identity
+}
+
+func (vb *VarBase) Mark(n int32) {
+	if vb != nil && vb.Valid() {
+		s := makeStub(vb.ID(), Mark(n))
+		PushStub(s)
+	}
+}
+
+func (vb *VarBase) Cancel() {
+	if vb != nil && vb.Valid() {
+		RemoveVariable(vb.ID())
+	}
 }
 
 func (vb *VarBase) Name() string {
@@ -65,6 +81,9 @@ func (vb *VarBase) Name() string {
 }
 func (vb *VarBase) ID() Identity {
 	return vb.id
+}
+func (vb *VarBase) AddChild(id ...Identity) {
+	vb.child = append(vb.child, id...)
 }
 func (vb *VarBase) Valid() bool {
 	return vb.id != 0
@@ -82,8 +101,6 @@ func (v vbs) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
 type Variable interface {
 	VarBase() *VarBase
 	Push(v Mark)
-	// OnExpose is called inside server after variable is registered
-	OnExpose(vb *VarBase) error
 	// Notify variable to dispose, and return all child variables that need to be removed
 	Dispose() []Identity
 	Describe(w io.StringWriter, quote bool)

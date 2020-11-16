@@ -220,7 +220,7 @@ func toUnderScore(name, src string) string {
 	}
 	return name
 }
-func Expose(prefix, name string, displayFilter DisplayFilter, v Variable) error {
+func Expose(prefix, name string, displayFilter DisplayFilter, v Variable) (*VarBase, error) {
 	vb := &VarBase{}
 	realName := ""
 	if len(prefix) > 0 {
@@ -239,7 +239,8 @@ func Expose(prefix, name string, displayFilter DisplayFilter, v Variable) error 
 	}
 	vb.displayFilter = displayFilter
 	srv.all[vb.id] = v
-	return v.OnExpose(vb)
+	// todo: check dupliacted name
+	return vb, nil
 }
 func callFunc(call func()) {
 	var wg sync.WaitGroup

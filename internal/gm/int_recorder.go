@@ -1,9 +1,31 @@
 package gm
 
+import "io"
+
 type IntRecorder struct {
+	vb        *VarBase
 	op, invOp Operator
 	value     Value // x: sum, y: num
 	sampler   *ReducerSampler
+}
+
+func (ir *IntRecorder) VarBase() *VarBase {
+	return ir.vb
+}
+
+func (ir *IntRecorder) Dispose() []Identity {
+	if ir.sampler != nil {
+		ir.sampler.dispose()
+	}
+	return nil
+}
+
+func (ir *IntRecorder) Describe(w io.StringWriter, quote bool) {
+	panic("implement me")
+}
+
+func (ir *IntRecorder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
+	panic("implement me")
 }
 
 func (ir *IntRecorder) Operators() (op Operator, invOp Operator) {
@@ -25,12 +47,6 @@ func (ir *IntRecorder) Reset() Value {
 
 func (ir *IntRecorder) GetValue() Value {
 	return ir.value
-}
-
-func (ir *IntRecorder) Dispose() {
-	if ir.sampler != nil {
-		ir.sampler.dispose()
-	}
 }
 
 func (ir *IntRecorder) sum() int64 {
@@ -62,7 +78,13 @@ func (ir *IntRecorder) GetWindowSampler() winSampler {
 	}
 	return ir.sampler
 }
-func NewIntRecorder() *IntRecorder {
+func NewIntRecorderNoExpose() (*IntRecorder, error) {
+	return NewIntRecorder("", "", DisplayOnNothing)
+}
+func NewIntRecorderWithName(name string) (*IntRecorder, error) {
+	return NewIntRecorder("", name, DisplayOnAll)
+}
+func NewIntRecorder(prefix, name string, filter DisplayFilter) (*IntRecorder, error) {
 	ir := &IntRecorder{
 		op: func(left, right Value) Value {
 			return left.Add(&right)
@@ -73,5 +95,12 @@ func NewIntRecorder() *IntRecorder {
 		value:   Value{},
 		sampler: nil,
 	}
-	return ir
+	if len(name) > 0 {
+		var err error
+		ir.vb, err = Expose(prefix, name, filter, ir)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ir, nil
 }

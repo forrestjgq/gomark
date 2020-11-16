@@ -7,8 +7,12 @@ import (
 
 type PassiveCallback func() Value
 
+type Pushable interface {
+	Push(v Mark)
+}
 type PassiveStatus struct {
 	vb          *VarBase
+	receiver    Pushable
 	op, invOp   Operator
 	seriesDivOp OperatorInt
 	log         bool
@@ -44,19 +48,14 @@ func (p *PassiveStatus) Operators() (op Operator, invOp Operator) {
 	return
 }
 
-func (p *PassiveStatus) Push(_ Mark) {
-	panic("PassiveStatus should never be pushing with a mark")
+func (p *PassiveStatus) Push(v Mark) {
+	if p.receiver != nil {
+		p.receiver.Push(v)
+	} else {
+		panic("PassiveStatus should never be pushing with a mark")
+	}
 }
 
-func (p *PassiveStatus) OnExpose(vb *VarBase) error {
-	p.vb = vb
-	if p.series == nil && flagSaveSeries {
-		p.series = NewIntSeries(p.op, p.seriesDivOp)
-		p.series.log = p.log
-		p.seriesDispose = AddSampler(p)
-	}
-	return nil
-}
 func (p *PassiveStatus) takeSample() {
 	if p.series != nil {
 		p.series.Append(p.GetValue())
@@ -99,17 +98,42 @@ func (p *PassiveStatus) GetWindowSampler() winSampler {
 func (p *PassiveStatus) SetVectorNames(names []string) {
 	p.names = names
 }
+func (p *PassiveStatus) setReceiver(reciever Pushable) {
+	p.receiver = reciever
+}
 func (p *PassiveStatus) setLog(log bool) {
 	p.log = log
 	if p.series != nil {
 		p.series.log = log
 	}
 }
-func NewPassiveStatus(callback PassiveCallback, op, invOp Operator, divOp OperatorInt) *PassiveStatus {
-	return &PassiveStatus{
+func NewPassiveStatusNoExpose(callback PassiveCallback, op, invOp Operator) (*PassiveStatus, error) {
+	return NewPassiveStatus("", "", DisplayOnNothing, callback, op, invOp, nil)
+}
+func NewPassiveStatusWithName(name string, callback PassiveCallback, op, invOp Operator, divOp OperatorInt) (*PassiveStatus, error) {
+	return NewPassiveStatus("", name, DisplayOnAll, callback, op, invOp, divOp)
+}
+func NewPassiveStatus(prefix, name string, filter DisplayFilter,
+	callback PassiveCallback, op, invOp Operator, divOp OperatorInt) (*PassiveStatus, error) {
+	p := &PassiveStatus{
 		op:          op,
 		invOp:       invOp,
 		seriesDivOp: divOp,
 		callback:    callback,
 	}
+
+	if len(name) > 0 {
+		var err error
+		if p.vb, err = Expose(prefix, name, filter, p); err != nil {
+			return nil, err
+		}
+
+		if p.series == nil && flagSaveSeries {
+			p.series = NewIntSeries(p.op, p.seriesDivOp)
+			p.series.log = p.log
+			p.seriesDispose = AddSampler(p)
+		}
+	}
+
+	return p, nil
 }

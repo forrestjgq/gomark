@@ -6,18 +6,21 @@ import (
 )
 
 type Maxer struct {
-	r *Reducer
+	vb *VarBase
+	r  *Reducer
 }
 
-func (m *Maxer) Dispose() {
-	m.r.Dispose()
+func (m *Maxer) VarBase() *VarBase {
+	return m.vb
 }
+
+func (m *Maxer) Dispose() []Identity {
+	m.r.Dispose()
+	return nil
+}
+
 func (m *Maxer) Push(v Mark) {
 	m.r.Push(v)
-}
-
-func (m *Maxer) OnExpose() {
-	m.r.OnExpose()
 }
 
 func (m *Maxer) OnSample() {
@@ -36,8 +39,15 @@ func (m *Maxer) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 	})
 }
 
+func NewMaxerNoExpose() (*Maxer, error) {
+	return NewMaxer("", "", DisplayOnNothing)
+}
+func NewMaxerWithName(name string) (*Maxer, error) {
+	return NewMaxer("", name, DisplayOnAll)
+}
+
 // NewMaxer create an maxer
-func NewMaxer() *Maxer {
+func NewMaxer(prefix, name string, filter DisplayFilter) (*Maxer, error) {
 	r := NewReducer(
 		func(dst, src Value) Value {
 			if dst.x >= src.x {
@@ -51,5 +61,14 @@ func NewMaxer() *Maxer {
 	maxer := &Maxer{
 		r: r,
 	}
-	return maxer
+
+	if len(name) > 0 {
+		var err error
+		maxer.vb, err = Expose(prefix, name, filter, maxer)
+		if err != nil {
+			return nil, err
+		}
+		maxer.r.OnExpose()
+	}
+	return maxer, nil
 }
