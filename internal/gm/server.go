@@ -83,7 +83,8 @@ func (s *server) markStub(stub stub) {
 }
 func (s *server) remove(id Identity) {
 	if v, ok := s.all[id]; ok {
-		ids := v.Dispose()
+		v.Dispose()
+		ids := v.VarBase().child
 		for _, sub := range ids {
 			s.remove(sub)
 		}

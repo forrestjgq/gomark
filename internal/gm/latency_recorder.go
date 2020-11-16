@@ -28,16 +28,7 @@ type LatencyRecorder struct {
 	latencyCdf              *CDF
 }
 
-func (lr *LatencyRecorder) Mark(n int32) {
-	mark := makeStub(lr.VarBase().ID(), Mark(n))
-	PushStub(mark)
-}
-
-func (lr *LatencyRecorder) Cancel() {
-	RemoveVariable(lr.VarBase().ID())
-}
-
-func (lr *LatencyRecorder) Dispose() []Identity {
+func (lr *LatencyRecorder) Dispose() {
 	lr.latency.Dispose()
 	lr.maxLatency.Dispose()
 	lr.latencyPercentileWindow.Dispose()
@@ -56,7 +47,6 @@ func (lr *LatencyRecorder) Dispose() []Identity {
 	lr.latencyP9999 = nil
 	lr.latencyPercentiles = nil
 	lr.latencyCdf = nil
-	return nil
 }
 
 func (lr *LatencyRecorder) VarBase() *VarBase {
@@ -164,22 +154,20 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 		return nil, fmt.Errorf("invalid name %s", name)
 	}
 
-	// if len(prefix) > 0 {
-	// 	name = prefix + "_" + name
-	// }
-
 	var err error
+	lr.vb, err = Expose("", name, DisplayOnNothing, lr)
+	if err != nil {
+		return nil, err
+	}
+
 	em := util.NewErrorMerge()
 	defer func() {
+		// clean up
 		if em.Failed() {
-			lr.Dispose()
+			srv.remove(lr.vb.id)
 		}
 	}()
 
-	lr.vb, err = Expose("", name, DisplayOnNothing, lr)
-	if em.Merge(err).Failed() {
-		return nil, err
-	}
 	name = lr.vb.name
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -196,6 +184,10 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	// detail::DivideOnAddition<::bvar::Stat, Op>::inplace_divide(tmp, op, 60);
 	lr.latencyWindow, err = NewWindow(name, "latency", DisplayOnAll,
 		window, lr.latency.GetWindowSampler(), SeriesInSecond, op, nil)
+	if em.Merge(err).Failed() {
+		return nil, err
+	}
+	lr.vb.AddChild(lr.latencyWindow.VarBase().ID())
 	f := func(v Value) string {
 		avg := v.AverageInt()
 		if avg != 0 {
@@ -228,6 +220,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.maxLatencyWindow.VarBase().ID())
 
 	maxf := func(v Value) string {
 		//glog.Info(">> value: ", v)
@@ -246,6 +239,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.count.VarBase().ID())
 	lr.count.SetDescriber(YValueSerializer, func(v Value, idx int) string {
 		return YValueSerializer(v)
 	})
@@ -267,6 +261,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.qps.VarBase().ID())
 	lr.qps.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
@@ -297,6 +292,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyP1.VarBase().ID())
 	lr.latencyP1.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
@@ -313,6 +309,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyP2.VarBase().ID())
 	lr.latencyP2.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
@@ -329,6 +326,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyP3.VarBase().ID())
 	lr.latencyP3.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
@@ -345,6 +343,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyP999.VarBase().ID())
 	lr.latencyP999.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
@@ -361,6 +360,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyP9999.VarBase().ID())
 	lr.latencyP9999.SetDescriber(XValueSerializer, func(v Value, idx int) string {
 		return XValueSerializer(v)
 	})
@@ -371,6 +371,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyCdf.VarBase().ID())
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Latency Percentiles
@@ -402,6 +403,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	if em.Merge(err).Failed() {
 		return nil, err
 	}
+	lr.vb.AddChild(lr.latencyPercentiles.VarBase().ID())
 	lr.latencyPercentiles.SetDescriber(VectorValueSerializer, func(v Value, idx int) string {
 		if idx >= 4 {
 			panic("invalid idx " + strconv.Itoa(idx))
@@ -418,17 +420,5 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 		"99.9%",
 	}
 	lr.latencyPercentiles.SetVectorNames(names)
-	lr.vb.AddChild(
-		lr.latencyWindow.VarBase().ID(),
-		lr.maxLatencyWindow.VarBase().ID(),
-		lr.count.VarBase().ID(),
-		lr.qps.VarBase().ID(),
-		lr.latencyP1.VarBase().ID(),
-		lr.latencyP2.VarBase().ID(),
-		lr.latencyP3.VarBase().ID(),
-		lr.latencyP999.VarBase().ID(),
-		lr.latencyP9999.VarBase().ID(),
-		lr.latencyCdf.VarBase().ID(),
-		lr.latencyPercentiles.VarBase().ID())
 	return lr, nil
 }

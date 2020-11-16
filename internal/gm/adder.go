@@ -14,10 +14,9 @@ func (a *Adder) VarBase() *VarBase {
 	return a.vb
 }
 
-func (a *Adder) Dispose() []Identity {
+func (a *Adder) Dispose() {
 	a.r.Dispose()
 	a.r = nil
-	return nil
 }
 
 func (a *Adder) Push(v Mark) {

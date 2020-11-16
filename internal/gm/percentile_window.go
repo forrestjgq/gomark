@@ -27,7 +27,7 @@ func (w *PercentileWindow) VarBase() *VarBase {
 func (w *PercentileWindow) Push(v Mark) {
 	panic("implement me")
 }
-func (w *PercentileWindow) Dispose() []Identity {
+func (w *PercentileWindow) Dispose() {
 	if w.series != nil && w.removeSample != nil {
 		w.removeSample()
 	}
@@ -36,7 +36,6 @@ func (w *PercentileWindow) Dispose() []Identity {
 	w.op = nil
 	w.seriesDivOp = nil
 	w.window = 0
-	return nil
 }
 
 func (w *PercentileWindow) OnExpose(vb *VarBase) {

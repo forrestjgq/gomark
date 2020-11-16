@@ -100,9 +100,10 @@ func (v vbs) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
 
 type Variable interface {
 	VarBase() *VarBase
+	// Called internally inside server's routine to mark variable
 	Push(v Mark)
 	// Notify variable to dispose, and return all child variables that need to be removed
-	Dispose() []Identity
+	Dispose()
 	Describe(w io.StringWriter, quote bool)
 	DescribeSeries(w io.StringWriter, opt *SeriesOption) error
 }

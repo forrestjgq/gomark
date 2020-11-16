@@ -38,13 +38,12 @@ type Window struct {
 func (w *Window) SetReceiver(reciever Pushable) {
 	w.receiver = reciever
 }
-func (w *Window) Dispose() []Identity {
+func (w *Window) Dispose() {
 	if w.series != nil && w.removeSample != nil {
 		w.removeSample()
 	}
 	w.sampler = nil
 	w.series = nil
-	return nil
 }
 
 func (w *Window) VarBase() *VarBase {

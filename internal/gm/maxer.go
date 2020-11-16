@@ -14,9 +14,8 @@ func (m *Maxer) VarBase() *VarBase {
 	return m.vb
 }
 
-func (m *Maxer) Dispose() []Identity {
+func (m *Maxer) Dispose() {
 	m.r.Dispose()
-	return nil
 }
 
 func (m *Maxer) Push(v Mark) {

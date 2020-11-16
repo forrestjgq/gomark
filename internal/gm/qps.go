@@ -44,7 +44,7 @@ func NewQPS(prefix, name string, filter DisplayFilter, freq SeriesFrequency) (*P
 		return v
 	}, op, invOp, statOperatorInt)
 	if err1 != nil {
-		_ = latencyWindow.Dispose()
+		srv.remove(latencyWindow.vb.ID())
 		return nil, err1
 	}
 	qps.setReceiver(latency)

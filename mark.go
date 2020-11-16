@@ -15,7 +15,7 @@ func NewLatencyRecorder(name string) gmi.Marker {
 	gm.RemoteCall(func() {
 		lr, err := gm.NewLatencyRecorder(name)
 		if err == nil {
-			ret = lr
+			ret = lr.VarBase()
 		}
 	})
 	return ret
@@ -34,9 +34,7 @@ func NewCounter(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
 		c, err := gm.NewCounterWithName(name)
-		if err != nil {
-			ret = nil
-		} else {
+		if err == nil {
 			ret = c.VarBase()
 		}
 	})
@@ -46,9 +44,7 @@ func NewQPS(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
 		q, err := gm.NewQPSWithName(name)
-		if err != nil {
-			ret = nil
-		} else {
+		if err == nil {
 			ret = q.VarBase()
 		}
 	})
@@ -58,9 +54,7 @@ func NewWindowMaxer(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
 		w, err := gm.NewWindowMaxer(name)
-		if err != nil {
-			ret = nil
-		} else {
+		if err == nil {
 			ret = w.VarBase()
 		}
 	})

@@ -13,11 +13,10 @@ func (ir *IntRecorder) VarBase() *VarBase {
 	return ir.vb
 }
 
-func (ir *IntRecorder) Dispose() []Identity {
+func (ir *IntRecorder) Dispose() {
 	if ir.sampler != nil {
 		ir.sampler.dispose()
 	}
-	return nil
 }
 
 func (ir *IntRecorder) Describe(w io.StringWriter, quote bool) {

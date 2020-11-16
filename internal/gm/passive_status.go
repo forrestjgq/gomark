@@ -26,7 +26,7 @@ type PassiveStatus struct {
 	seriesDispose disposer
 }
 
-func (p *PassiveStatus) Dispose() []Identity {
+func (p *PassiveStatus) Dispose() {
 	if p.sampler != nil {
 		p.sampler.dispose()
 		p.sampler = nil
@@ -36,7 +36,6 @@ func (p *PassiveStatus) Dispose() []Identity {
 		p.seriesDispose = nil
 	}
 	p.series = nil
-	return nil
 }
 
 func (p *PassiveStatus) VarBase() *VarBase {
