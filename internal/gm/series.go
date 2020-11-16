@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -15,6 +17,7 @@ type Trend struct {
 	Data  []Value `json:"data"`
 }
 type IntSeries struct {
+	log                       bool
 	op                        Operator
 	divOp                     OperatorInt
 	second, minute, hour, day int8
@@ -23,6 +26,9 @@ type IntSeries struct {
 type ValueConverter func(v Value, idx int) string
 
 func (s *IntSeries) Append(v Value) {
+	if s.log {
+		glog.Infof("append %v", DivideToSliceU32(v))
+	}
 	s.appendSecond(v)
 }
 
@@ -83,7 +89,7 @@ func (s *IntSeries) Describe(w io.StringWriter, splitName []string, cvt ValueCon
 				if i > 0 {
 					_, _ = w.WriteString(",")
 				}
-				_, _ = w.WriteString(fmt.Sprintf("[%d,%s]", i, cvt(v, 0)))
+				_, _ = w.WriteString(fmt.Sprintf("[%d,%s]", i, cvt(v, j)))
 			}
 			_, _ = w.WriteString("]}")
 		}
@@ -131,6 +137,9 @@ func (s *IntSeries) appendSecond(v Value) {
 
 		if s.divOp != nil {
 			acc = s.divOp(acc, 60)
+		}
+		if s.log {
+			glog.Infof("append minute %v", DivideToSliceU32(acc))
 		}
 		s.appendMinute(acc)
 	}

@@ -11,6 +11,7 @@ type PassiveStatus struct {
 	vb          *VarBase
 	op, invOp   Operator
 	seriesDivOp OperatorInt
+	log         bool
 
 	callback      PassiveCallback
 	sampler       *ReducerSampler
@@ -51,6 +52,7 @@ func (p *PassiveStatus) OnExpose(vb *VarBase) error {
 	p.vb = vb
 	if p.series == nil && flagSaveSeries {
 		p.series = NewIntSeries(p.op, p.seriesDivOp)
+		p.series.log = p.log
 		p.seriesDispose = AddSampler(p)
 	}
 	return nil
@@ -96,6 +98,12 @@ func (p *PassiveStatus) GetWindowSampler() winSampler {
 
 func (p *PassiveStatus) SetVectorNames(names []string) {
 	p.names = names
+}
+func (p *PassiveStatus) setLog(log bool) {
+	p.log = log
+	if p.series != nil {
+		p.series.log = log
+	}
 }
 func NewPassiveStatus(callback PassiveCallback, op, invOp Operator, divOp OperatorInt) *PassiveStatus {
 	return &PassiveStatus{

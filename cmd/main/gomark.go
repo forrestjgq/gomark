@@ -56,6 +56,7 @@ func testLatencyRecorder() {
 	lr := gomark.NewLatencyRecorder("hello")
 	for {
 		v := rand.Int31n(100) + 1
+		//lr.Mark(70)
 		lr.Mark(v)
 		//glog.Infof("mark %d", v)
 		time.Sleep(time.Duration(rand.Intn(28)*3+17) * time.Millisecond)

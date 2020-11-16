@@ -67,6 +67,12 @@ func (v *Value) AverageFloat() float64 {
 	}
 	return float64(v.x) / float64(v.y)
 }
+func (v *Value) GetU32(idx int) uint32 {
+	return *(*uint32)(unsafe.Pointer(uintptr(unsafe.Pointer(v)) + uintptr(idx*4)))
+}
+func (v *Value) SetU32(idx int, val uint32) {
+	*(*uint32)(unsafe.Pointer(uintptr(unsafe.Pointer(v)) + uintptr(idx*4))) = val
+}
 
 func OneValue(x int64) Value {
 	return Value{

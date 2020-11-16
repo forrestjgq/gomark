@@ -5,7 +5,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"unsafe"
 )
 
 type LatencyRecorder struct {
@@ -273,7 +272,7 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	lr.maxLatencyWindow.SetDescriber(maxf, func(v Value, idx int) string {
 		return maxf(v)
 	})
-	lr.maxLatencyWindow.log = true
+	//lr.maxLatencyWindow.log = true
 
 	lr.count = NewPassiveStatus(func() Value {
 		return lr.latency.GetValue() // should use value.y
@@ -359,15 +358,36 @@ func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, erro
 	lr.latencyCdf = newCDF(lr.latencyPercentileWindow)
 	lr.latencyPercentiles = NewPassiveStatus(func() Value {
 		return CombineToValueU32(lr.LatencyPercentiles())
-	}, op, invOp, statOperatorInt)
+	}, func(left, right Value) Value {
+		var v Value
+		for i := 0; i < 4; i++ {
+			v.SetU32(i, left.GetU32(i)+right.GetU32(i))
+		}
+		return v
+	}, func(left, right Value) Value {
+		var v Value
+		for i := 0; i < 4; i++ {
+			v.SetU32(i, left.GetU32(i)-right.GetU32(i))
+		}
+		return v
+
+	}, func(left Value, right int) Value {
+		var v Value
+		if right > 0 {
+			for i := 0; i < 4; i++ {
+				v.SetU32(i, left.GetU32(i)/uint32(right))
+			}
+		}
+		return v
+	})
 	lr.latencyPercentiles.SetDescriber(VectorValueSerializer, func(v Value, idx int) string {
 		if idx >= 4 {
 			panic("invalid idx " + strconv.Itoa(idx))
 		}
-		p1 := (*uint32)(unsafe.Pointer(uintptr(unsafe.Pointer(&v.x)) + unsafe.Sizeof(uint32(0))*uintptr(idx)))
-		val := int(*p1)
-		return strconv.Itoa(val)
+
+		return strconv.Itoa(int(v.GetU32(idx)))
 	})
+	//lr.latencyPercentiles.setLog(true)
 
 	// this is a variable that does not display
 	err := Expose("", name, DisplayOnNothing, lr)
