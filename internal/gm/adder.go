@@ -69,7 +69,7 @@ func NewAdder(prefix, name string, filter DisplayFilter) (*Adder, error) {
 
 	if len(name) > 0 {
 		var err error
-		adder.vb, err = Expose("", name, filter, adder)
+		adder.vb, err = Expose(prefix, name, filter, adder)
 		if err != nil {
 			return nil, err
 		}
