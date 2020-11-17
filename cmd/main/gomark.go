@@ -15,7 +15,7 @@ import (
 
 func testWindowMaxer(total int) {
 	glog.Info("Window Maxer")
-	wm := gomark.NewWindowMaxer("window_maxer_t")
+	wm := gomark.NewWindowMaxer("WindowMaxer")
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(100) + 1
 		wm.Mark(v)
@@ -23,6 +23,18 @@ func testWindowMaxer(total int) {
 		time.Sleep(100 * time.Millisecond)
 	}
 	wm.Cancel()
+	gm.MakeSureEmpty()
+}
+func testMaxer(total int) {
+	glog.Info("Maxer")
+	ad := gomark.NewMaxer("hello")
+	for i := 0; i < total; i++ {
+		v := rand.Int31n(10) + 1
+		ad.Mark(v)
+		//glog.Infof("mark %d", v)
+		time.Sleep(100 * time.Millisecond)
+	}
+	ad.Cancel()
 	gm.MakeSureEmpty()
 }
 func testAdder(total int) {
@@ -97,10 +109,11 @@ func main() {
 	total := 0
 	port := 0
 	flag.IntVar(&total, "n", math.MaxInt64-1, "how many time for each var to run, not present for infinite")
-	flag.IntVar(&port, "p", 7777, "http port, default 7777")
+	flag.IntVar(&port, "p", 7770, "http port, default 7770")
 	flag.Parse()
 	gomark.StartHTTPServer(port)
 
+	testMaxer(total)
 	testLatencyRecorder(total)
 	testQPS(total)
 	testWindowMaxer(total)
