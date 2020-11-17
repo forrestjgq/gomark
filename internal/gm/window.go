@@ -35,8 +35,8 @@ type Window struct {
 	receiver     Pushable
 }
 
-func (w *Window) SetReceiver(reciever Pushable) {
-	w.receiver = reciever
+func (w *Window) SetReceiver(receiver Pushable) {
+	w.receiver = receiver
 }
 func (w *Window) Dispose() {
 	if w.series != nil && w.removeSample != nil {
@@ -49,7 +49,6 @@ func (w *Window) Dispose() {
 func (w *Window) VarBase() *VarBase {
 	return w.vb
 }
-
 
 func (w *Window) Push(v Mark) {
 	if w.receiver != nil {
@@ -115,7 +114,7 @@ func NewWindowNoExpose(window int, sampler winSampler, op Operator) (*Window, er
 	return NewWindow("", "", DisplayOnNothing, window, sampler, SeriesInSecond, op, nil)
 }
 func NewWindowWithName(name string, window int, sampler winSampler, op Operator, seriesDivOp OperatorInt) (*Window, error) {
-	return NewWindow("", name, DisplayOnAll, window, sampler, SeriesInSecond, op, seriesDivOp)
+	return NewWindow(name, "window", DisplayOnAll, window, sampler, SeriesInSecond, op, seriesDivOp)
 }
 func NewWindow(prefix, name string, filter DisplayFilter, window int,
 	sampler winSampler, freq SeriesFrequency, op Operator, seriesDivOp OperatorInt) (*Window, error) {

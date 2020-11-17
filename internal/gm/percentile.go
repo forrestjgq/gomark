@@ -178,16 +178,16 @@ func (pi *PercentileInterval) SameOf(rhs *PercentileInterval) bool {
 		reflect.DeepEqual(pi.samples[0:pi.numSamples], rhs.samples[0:rhs.numSamples])
 }
 
-func (pi *PercentileInterval) check() bool {
-
-	n := pi.samples[0]
-	for i := 1; i < int(pi.numSamples); i++ {
-		if pi.samples[i] != n+uint32(i) {
-			return false
-		}
-	}
-	return true
-}
+//func (pi *PercentileInterval) check() bool {
+//
+//	n := pi.samples[0]
+//	for i := 1; i < int(pi.numSamples); i++ {
+//		if pi.samples[i] != n+uint32(i) {
+//			return false
+//		}
+//	}
+//	return true
+//}
 func (pi *PercentileInterval) Describe(w io.StringWriter) {
 	_, _ = w.WriteString(fmt.Sprintf("(num_added=%d)[", pi.AddedCount()))
 	for i := 0; i < int(pi.numSamples); i++ {

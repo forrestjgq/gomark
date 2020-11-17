@@ -23,6 +23,10 @@ func (a *Adder) Push(v Mark) {
 	a.r.Push(v)
 }
 
+func (a *Adder) GetValue() int64 {
+	return a.r.GetValue().x
+}
+
 func (a *Adder) Describe(w io.StringWriter, _ bool) {
 	a.r.Describe(w, func(v Value) string {
 		return strconv.Itoa(int(v.x))
@@ -39,7 +43,7 @@ func NewAdderNoExpose() (*Adder, error) {
 	return NewAdder("", "", DisplayOnNothing)
 }
 func NewAdderWithName(name string) (*Adder, error) {
-	return NewAdder("", name, DisplayOnAll)
+	return NewAdder(name, "adder", DisplayOnAll)
 }
 
 // NewAdder create an adder
@@ -53,10 +57,9 @@ func NewAdder(prefix, name string, filter DisplayFilter) (*Adder, error) {
 		},
 		func(left Value, right int) Value {
 			var v Value
-			if right == 0 {
-				return v
+			if right != 0 {
+				v.x = left.x / int64(right)
 			}
-			v.x = left.x / int64(right)
 			return v
 		})
 

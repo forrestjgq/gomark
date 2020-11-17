@@ -137,3 +137,12 @@ func DivideToSliceU32(v Value) []uint32 {
 	copy(dst, src)
 	return dst
 }
+
+var statOperatorInt OperatorInt = func(left Value, right int) Value {
+	if right == 0 {
+		return left
+	}
+	left.x /= int64(right)
+	left.y /= int64(right)
+	return left
+}

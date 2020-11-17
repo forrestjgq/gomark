@@ -1,4 +1,4 @@
-package gomark
+package gm
 
 import (
 	"math"

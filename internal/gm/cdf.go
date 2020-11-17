@@ -77,7 +77,7 @@ func NewCDFNoExpose(w *PercentileWindow) (*CDF, error) {
 	return NewCDF("", "", DisplayOnNothing, w)
 }
 func NewCDFWithName(name string, w *PercentileWindow) (*CDF, error) {
-	return NewCDF("", name, DisplayOnAll, w)
+	return NewCDF(name, "cdf", DisplayOnAll, w)
 }
 func NewCDF(prefix, name string, filter DisplayFilter, w *PercentileWindow) (*CDF, error) {
 	c := &CDF{w: w}

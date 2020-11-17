@@ -38,12 +38,6 @@ func (w *PercentileWindow) Dispose() {
 	w.window = 0
 }
 
-func (w *PercentileWindow) OnExpose(vb *VarBase) {
-	w.vb = vb
-	// todo
-	panic("should not be called")
-}
-
 func (w *PercentileWindow) takeSample() {
 	if w.series != nil {
 		if w.frequency == SeriesInSecond {
@@ -61,7 +55,6 @@ func (w *PercentileWindow) Describe(sw io.StringWriter, _ bool) {
 
 func (w *PercentileWindow) DescribeSeries(sw io.StringWriter, opt *SeriesOption) error {
 	panic("should not be called")
-	return nil
 }
 func (w *PercentileWindow) GetSpanOf(window int) PercentileSampleInRange {
 	return w.sampler.ValueInWindow(window)

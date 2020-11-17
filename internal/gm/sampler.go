@@ -29,9 +29,10 @@ type sampleQueue struct {
 func (q *sampleQueue) inc(n int) int {
 	return (n + 1) % len(q.q)
 }
-func (q *sampleQueue) dec(n int) int {
-	return (n + len(q.q) - 1) % len(q.q)
-}
+
+//func (q *sampleQueue) dec(n int) int {
+//	return (n + len(q.q) - 1) % len(q.q)
+//}
 func (q *sampleQueue) push(s sample) {
 	//glog.Info("Push ", s)
 	if q.window+1 > len(q.q) {
@@ -89,15 +90,13 @@ func (q *sampleQueue) top() sample {
 func (q *sampleQueue) latest() sample {
 	return q.top()
 }
-func (q *sampleQueue) oldest() sample {
-	return q.bottom()
-}
-func (q *sampleQueue) bottom() sample {
-	if q.empty() {
-		panic("queue is empty")
-	}
-	return q.q[q.start]
-}
+
+//func (q *sampleQueue) oldest() sample {
+//	if q.empty() {
+//		panic("queue is empty")
+//	}
+//	return q.q[q.start]
+//}
 func (q *sampleQueue) oldestIn(n int) sample {
 	if q.empty() {
 		panic("queue is empty")
@@ -105,9 +104,9 @@ func (q *sampleQueue) oldestIn(n int) sample {
 	if n < 0 {
 		n = 0
 	} else if n >= q.size() {
-		n = q.size()-1
+		n = q.size() - 1
 	}
-	return q.q[(q.start +n) % len(q.q)]
+	return q.q[(q.start+n)%len(q.q)]
 }
 func (q *sampleQueue) size() int {
 	return q.sz

@@ -97,15 +97,6 @@ func (s *server) remove(id Identity) {
 		delete(s.all, id)
 	}
 }
-func (s *server) add(v Variable) Identity {
-	for {
-		s.seq++
-		if _, ok := s.all[s.seq]; !ok && s.seq != 0 {
-			s.all[s.seq] = v
-			return s.seq
-		}
-	}
-}
 func (s *server) describe(v Variable, w io.StringWriter, quoteString bool, filter DisplayFilter) error {
 	if filter&v.VarBase().displayFilter == 0 {
 		return errors.New(v.VarBase().name + " do not match filter")
@@ -245,8 +236,13 @@ func Expose(prefix, name string, displayFilter DisplayFilter, v Variable) (*VarB
 		}
 	}
 	vb.displayFilter = displayFilter
+	for _, v := range srv.all {
+		if v.VarBase().name == vb.name {
+			return nil, fmt.Errorf("duplicate variable name %s", vb.name)
+		}
+	}
 	srv.all[vb.id] = v
-	// todo: check dupliacted name
+
 	return vb, nil
 }
 func callFunc(call func()) {
@@ -301,7 +297,7 @@ func RemoteCall(call func()) {
 	callFunc(call)
 }
 
-func MakeSureEmpty()  {
+func MakeSureEmpty() {
 	fail := false
 	if len(srv.samplers) > 0 {
 		glog.Errorf("sampler not cleared:")
@@ -309,7 +305,7 @@ func MakeSureEmpty()  {
 			glog.Infof("    %T", s)
 		}
 
-		fail =true
+		fail = true
 	}
 
 	if len(srv.all) > 0 {

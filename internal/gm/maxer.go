@@ -42,7 +42,7 @@ func NewMaxerNoExpose() (*Maxer, error) {
 	return NewMaxer("", "", DisplayOnNothing)
 }
 func NewMaxerWithName(name string) (*Maxer, error) {
-	return NewMaxer("", name, DisplayOnAll)
+	return NewMaxer(name, "max", DisplayOnAll)
 }
 
 // NewMaxer create an maxer

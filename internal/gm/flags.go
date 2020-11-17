@@ -1,7 +1,7 @@
 package gm
 
 const (
-	flagPecentileLog    = true
+	//flagPecentileLog    = true
 	flagSaveSeries      = true
 	FlagQuoteVector     = true
 	flagLogDumped       = false

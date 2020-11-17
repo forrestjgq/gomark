@@ -137,15 +137,6 @@ func NewLatencyRecorder(name string) (*LatencyRecorder, error) {
 	return NewLatencyRecorderInWindow(name, defaultDumpInterval)
 }
 
-var statOperatorInt OperatorInt = func(left Value, right int) Value {
-	if right == 0 {
-		return left
-	}
-	left.x /= int64(right)
-	left.y /= int64(right)
-	return left
-}
-
 func NewLatencyRecorderInWindow(name string, window int) (*LatencyRecorder, error) {
 	lr := &LatencyRecorder{}
 

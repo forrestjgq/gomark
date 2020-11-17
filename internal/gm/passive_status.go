@@ -131,5 +131,6 @@ func NewPassiveStatus(prefix, name string, filter DisplayFilter,
 		}
 	}
 
+	p.setLog(false)
 	return p, nil
 }

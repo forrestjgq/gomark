@@ -79,9 +79,10 @@ func (s *PercentileSeries) getHour(idx int8) *PercentileSamples {
 func (s *PercentileSeries) setHour(idx int8, v *PercentileSamples) {
 	s.data[120+int(idx)] = v
 }
-func (s *PercentileSeries) getDay(idx int8) *PercentileSamples {
-	return s.data[144+int(idx)]
-}
+
+//func (s *PercentileSeries) getDay(idx int8) *PercentileSamples {
+//	return s.data[144+int(idx)]
+//}
 func (s *PercentileSeries) setDay(idx int8, v *PercentileSamples) {
 	s.data[144+int(idx)] = v
 }

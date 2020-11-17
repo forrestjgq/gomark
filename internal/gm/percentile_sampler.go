@@ -31,9 +31,10 @@ type PercentileSampleQueue struct {
 func (q *PercentileSampleQueue) inc(n int) int {
 	return (n + 1) % len(q.q)
 }
-func (q *PercentileSampleQueue) dec(n int) int {
-	return (n + len(q.q) - 1) % len(q.q)
-}
+
+//func (q *PercentileSampleQueue) dec(n int) int {
+//	return (n + len(q.q) - 1) % len(q.q)
+//}
 func (q *PercentileSampleQueue) push(s PercentileSample) {
 	if q.window+1 > len(q.q) {
 		if q.window == 0 {
@@ -88,15 +89,16 @@ func (q *PercentileSampleQueue) top() PercentileSample {
 func (q *PercentileSampleQueue) latest() PercentileSample {
 	return q.top()
 }
-func (q *PercentileSampleQueue) oldest() PercentileSample {
-	return q.bottom()
-}
-func (q *PercentileSampleQueue) bottom() PercentileSample {
-	if q.empty() {
-		panic("queue is empty")
-	}
-	return q.q[q.start]
-}
+
+//func (q *PercentileSampleQueue) oldest() PercentileSample {
+//	return q.bottom()
+//}
+//func (q *PercentileSampleQueue) bottom() PercentileSample {
+//	if q.empty() {
+//		panic("queue is empty")
+//	}
+//	return q.q[q.start]
+//}
 func (q *PercentileSampleQueue) oldestIn(n int) PercentileSample {
 	if q.empty() {
 		panic("queue is empty")
@@ -104,9 +106,9 @@ func (q *PercentileSampleQueue) oldestIn(n int) PercentileSample {
 	if n < 0 {
 		n = 0
 	} else if n >= q.size() {
-		n = q.size()-1
+		n = q.size() - 1
 	}
-	return q.q[(q.start +n) % len(q.q)]
+	return q.q[(q.start+n)%len(q.q)]
 }
 func (q *PercentileSampleQueue) size() int {
 	return q.sz

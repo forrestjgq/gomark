@@ -4,7 +4,7 @@ func NewCounterNoExpose() (*PassiveStatus, error) {
 	return NewCounter("", "", DisplayOnNothing)
 }
 func NewCounterWithName(name string) (*PassiveStatus, error) {
-	return NewCounter("", name, DisplayOnAll)
+	return NewCounter(name, "count", DisplayOnAll)
 }
 func NewCounter(prefix, name string, filter DisplayFilter) (*PassiveStatus, error) {
 	latency, _ := NewIntRecorderNoExpose()
