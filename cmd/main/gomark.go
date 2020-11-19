@@ -1,29 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"math"
 	"math/rand"
+	"os"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/nsf/termbox-go"
-
-	"github.com/forrestjgq/gomark/internal/gm"
-
-	"github.com/golang/glog"
-
 	"github.com/forrestjgq/gomark"
+	"github.com/forrestjgq/gomark/internal/gm"
+	"github.com/golang/glog"
 )
 
-func init() {
-	if err := termbox.Init(); err != nil {
-		panic(err)
-	}
-	termbox.SetCursor(0, 0)
-	termbox.HideCursor()
-}
 func testMaxWindow(name string, total int) {
 	glog.Info("Maxer window")
 	ad := gomark.NewWindowMaxer(name)
@@ -122,15 +113,8 @@ func wait(test string) {
 	if !stop {
 		return
 	}
-
-	glog.Info("press any key to start ", test)
-Loop:
-	for {
-		switch ev := termbox.PollEvent(); ev.Type {
-		case termbox.EventKey:
-			break Loop
-		}
-	}
+	glog.Info("Press 'Enter' to continue ", test)
+	_, _ = bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 func main() {
 	total := 0

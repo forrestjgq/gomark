@@ -325,20 +325,6 @@ func RemoteCall(call func()) {
 }
 
 func MakeSureEmpty() {
-	base := 0
-	if srv.sampleLatency != nil {
-		base++
-	}
-	if srv.remoteCallLatency != nil {
-		base++
-	}
-	if srv.markLatency != nil {
-		base++
-	}
-	if base > 0 {
-		return
-	}
-
 	fail := false
 	if len(srv.samplers) > 0 {
 		glog.Errorf("sampler not cleared:")
