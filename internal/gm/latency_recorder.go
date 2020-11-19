@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/forrestjgq/gomark/internal/util"
 )
@@ -126,6 +127,11 @@ func (lr *LatencyRecorder) CountName() string {
 }
 func (lr *LatencyRecorder) QpsName() string {
 	return lr.qps.VarBase().name
+}
+func (lr *LatencyRecorder) doUs(f func()) {
+	now := time.Now()
+	f()
+	lr.Push(Mark(time.Since(now).Milliseconds()))
 }
 func (lr *LatencyRecorder) Push(v Mark) {
 	lr.latency.Push(v)

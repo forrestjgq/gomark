@@ -70,7 +70,7 @@ func NewCounter(name string) gmi.Marker {
 func NewQPS(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
-		q, err := gm.NewQPSWithName(name)
+		q, err := gm.NewQPS(name)
 		if err == nil {
 			ret = q.VarBase()
 		}

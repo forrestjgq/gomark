@@ -5,12 +5,9 @@ import (
 )
 
 func NewQPSNoExpose() (*PassiveStatus, error) {
-	return NewQPS("", "", DisplayOnNothing, SeriesInSecond)
+	return NewQPS("")
 }
-func NewQPSWithName(name string) (*PassiveStatus, error) {
-	return NewQPS(name, "qps", DisplayOnAll, SeriesInSecond)
-}
-func NewQPS(prefix, name string, filter DisplayFilter, freq SeriesFrequency) (*PassiveStatus, error) {
+func NewQPS(name string) (*PassiveStatus, error) {
 	latency, _ := NewIntRecorderNoExpose()
 	op, invOp := latency.Operators()
 
@@ -31,7 +28,7 @@ func NewQPS(prefix, name string, filter DisplayFilter, freq SeriesFrequency) (*P
 		return f(v)
 	})
 
-	qps, err1 := NewPassiveStatus(prefix, name, DisplayOnAll, func() Value {
+	qps, err1 := NewPassiveStatus(name, "QPS", DisplayOnAll, func() Value {
 		var v Value
 		s := latencyWindow.GetSpanOf(1)
 		if s.du <= 0 {

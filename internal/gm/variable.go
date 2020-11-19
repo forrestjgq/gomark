@@ -42,9 +42,13 @@ type VarBase struct {
 	id            Identity
 	displayFilter DisplayFilter
 	child         []Identity
-	disposer  []disposer
+	disposer      []disposer
+	perf          bool
 }
 
+func (vb *VarBase) EnablePerf() {
+	vb.perf = true
+}
 func (vb *VarBase) Mark(n int32) {
 	if vb != nil && vb.Valid() {
 		s := makeStub(vb.ID(), Mark(n))

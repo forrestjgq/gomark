@@ -4,6 +4,8 @@ import (
 	"flag"
 	"math"
 	"math/rand"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -22,9 +24,9 @@ func init() {
 	termbox.SetCursor(0, 0)
 	termbox.HideCursor()
 }
-func testMaxWindow(total int) {
+func testMaxWindow(name string, total int) {
 	glog.Info("Maxer window")
-	ad := gomark.NewWindowMaxer("hello")
+	ad := gomark.NewWindowMaxer(name)
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(10) + 1
 		ad.Mark(v)
@@ -34,9 +36,9 @@ func testMaxWindow(total int) {
 	ad.Cancel()
 	gm.MakeSureEmpty()
 }
-func testMaxer(total int) {
+func testMaxer(name string, total int) {
 	glog.Info("Maxer")
-	ad := gomark.NewMaxer("hello")
+	ad := gomark.NewMaxer(name)
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(10) + 1
 		ad.Mark(v)
@@ -46,9 +48,9 @@ func testMaxer(total int) {
 	ad.Cancel()
 	gm.MakeSureEmpty()
 }
-func testAdder(total int) {
+func testAdder(name string, total int) {
 	glog.Info("Adder")
-	ad := gomark.NewAdder("hello")
+	ad := gomark.NewAdder(name)
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(11) - 5
 		ad.Mark(v)
@@ -58,9 +60,9 @@ func testAdder(total int) {
 	ad.Cancel()
 	gm.MakeSureEmpty()
 }
-func testCounter(total int) {
+func testCounter(name string, total int) {
 	glog.Info("Counter")
-	cnt := gomark.NewCounter("hello")
+	cnt := gomark.NewCounter(name)
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(10) + 1
 		cnt.Mark(v)
@@ -70,10 +72,10 @@ func testCounter(total int) {
 	cnt.Cancel()
 	gm.MakeSureEmpty()
 }
-func testQPS(total int) {
+func testQPS(name string, total int) {
 	glog.Info("QPS")
 
-	qps := gomark.NewQPS("hello")
+	qps := gomark.NewQPS(name)
 	for i := 0; i < total; i++ {
 		//v := rand.Int31n(10) + 1
 		qps.Mark(6)
@@ -84,15 +86,15 @@ func testQPS(total int) {
 	qps.Cancel()
 	gm.MakeSureEmpty()
 }
-func testLatencyRecorder(total int) {
+func testLatencyRecorder(name string, total int) {
 	glog.Info("Latency Recorder")
 
-	lr := gomark.NewLatencyRecorder("hello")
+	lr := gomark.NewLatencyRecorder(name)
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(100) + 1
 		//lr.Mark(70)
 		lr.Mark(v)
-		glog.Infof("mark %d", v)
+		//glog.Infof("mark %d", v)
 		time.Sleep(time.Duration(rand.Intn(28)*3+17) * time.Millisecond)
 	}
 
@@ -139,21 +141,40 @@ func main() {
 	flag.Parse()
 	gomark.StartHTTPServer(port)
 
-	wait("testMaxWindow")
-	testMaxWindow(total)
-	wait("testMaxer")
-	testMaxer(total)
-	wait("testAdder")
-	testAdder(total)
-	wait("testLatencyRecorder")
-	testLatencyRecorder(total)
-	wait("testQPS")
-	testQPS(total)
-	wait("testCounter")
-	testCounter(total)
-	wait("testPercentile")
-	testPecentile(total)
-	glog.Info("exit")
+	if total == 0 {
+		total = math.MaxInt64 - 1
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		gm.EnableInternalVariables()
 
-	gm.MakeSureEmpty()
+		for i := 0; i < 1000; i++ {
+			go testMaxWindow("max_win_"+strconv.Itoa(i), total)
+			go testMaxer("max_"+strconv.Itoa(i), total)
+			go testAdder("adder_"+strconv.Itoa(i), total)
+			go testLatencyRecorder("latency_recorder_"+strconv.Itoa(i), total)
+			go testQPS("qps_"+strconv.Itoa(i), total)
+			go testCounter("counter_"+strconv.Itoa(i), total)
+		}
+
+		go testPecentile(total)
+		wg.Wait()
+	} else {
+		wait("testMaxWindow")
+		testMaxWindow("testMaxWindow", total)
+		wait("testMaxer")
+		testMaxer("testMaxer", total)
+		wait("testAdder")
+		testAdder("testAdder", total)
+		wait("testLatencyRecorder")
+		testLatencyRecorder("testLatencyRecorder", total)
+		wait("testQPS")
+		testQPS("testQPS", total)
+		wait("testCounter")
+		testCounter("testCounter", total)
+		wait("testPercentile")
+		testPecentile(total)
+		glog.Info("exit")
+
+		gm.MakeSureEmpty()
+	}
 }

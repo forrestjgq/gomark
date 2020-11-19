@@ -18,10 +18,13 @@ const (
 	sizeOfQ = 10000
 )
 
+// sampler is an entity that can be scheduled to take samples.
+// AddSampler
 type sampler interface {
 	takeSample()
 }
 
+// callback to be called on variable removing
 type disposer func()
 
 type server struct {
@@ -32,6 +35,12 @@ type server struct {
 	all      map[Identity]Variable
 	samplers map[Identity]sampler
 	tk       *time.Ticker
+
+	// internal variables
+	sampleLatency     *LatencyRecorder
+	markLatency       *LatencyRecorder
+	remoteCallLatency *LatencyRecorder
+	exposeAdder       *Adder
 }
 
 var srv *server
@@ -45,17 +54,35 @@ func init() {
 		tk:       time.NewTicker(time.Second),
 	}
 	go srv.run()
+
+	//srv.markLatency.vb.EnablePerf()
 }
 
 func (s *server) run() {
 	for {
 		select {
 		case f := <-s.callc:
-			f()
+			if srv.remoteCallLatency != nil {
+				srv.remoteCallLatency.doUs(f)
+			} else {
+				f()
+			}
 		case rx := <-s.stubc:
-			s.markStub(rx)
+			if s.markLatency != nil {
+				srv.markLatency.doUs(func() {
+					s.markStub(rx)
+				})
+			} else {
+				s.markStub(rx)
+			}
 		case <-s.tk.C:
-			s.sample()
+			if srv.sampleLatency != nil {
+				srv.sampleLatency.doUs(func() {
+					s.sample()
+				})
+			} else {
+				s.sample()
+			}
 		}
 	}
 }
@@ -298,6 +325,20 @@ func RemoteCall(call func()) {
 }
 
 func MakeSureEmpty() {
+	base := 0
+	if srv.sampleLatency != nil {
+		base++
+	}
+	if srv.remoteCallLatency != nil {
+		base++
+	}
+	if srv.markLatency != nil {
+		base++
+	}
+	if base > 0 {
+		return
+	}
+
 	fail := false
 	if len(srv.samplers) > 0 {
 		glog.Errorf("sampler not cleared:")
@@ -318,5 +359,32 @@ func MakeSureEmpty() {
 
 	if fail {
 		glog.Fatalf("gomark check fail")
+	}
+}
+func DisableInternalVariables() {
+	t := srv.sampleLatency
+	srv.sampleLatency = nil
+	t.vb.Cancel()
+
+	t = srv.markLatency
+	srv.markLatency = nil
+	t.vb.Cancel()
+
+	t = srv.markLatency
+	srv.markLatency = nil
+	t.vb.Cancel()
+}
+func EnableInternalVariables() {
+	if srv.sampleLatency == nil {
+		srv.sampleLatency, _ = NewLatencyRecorder("internal_sample_us")
+	}
+	if srv.markLatency == nil {
+		srv.markLatency, _ = NewLatencyRecorder("internal_mark_us")
+	}
+	if srv.remoteCallLatency == nil {
+		srv.remoteCallLatency, _ = NewLatencyRecorder("internal_remote_call_us")
+	}
+	if srv.exposeAdder == nil {
+		srv.exposeAdder, _ = NewAdder("internal_variable")
 	}
 }
