@@ -6,7 +6,7 @@ import (
 )
 
 func TestAdder(t *testing.T) {
-	adder, err := NewAdderWithName("v")
+	adder, err := NewAdder("v")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

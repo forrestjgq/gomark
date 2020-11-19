@@ -40,15 +40,51 @@ func (a *Adder) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 }
 
 func NewAdderNoExpose() (*Adder, error) {
-	return NewAdder("", "", DisplayOnNothing)
-}
-func NewAdderWithName(name string) (*Adder, error) {
-	return NewAdder(name, "adder", DisplayOnAll)
+	return NewAdder("")
 }
 
-// NewAdder create an adder
-func NewAdder(prefix, name string, filter DisplayFilter) (*Adder, error) {
-	r := NewReducer(
+//func NewAdder1(name string) (*Adder, error) {
+//	adder := &Adder{}
+//	adder.r = NewReducer(
+//		func(dst, src Value) Value {
+//			return dst.Add(&src)
+//		},
+//		func(dst, src Value) Value {
+//			return dst.Sub(&src)
+//		},
+//		func(left Value, right int) Value {
+//			var v Value
+//			if right != 0 {
+//				v.x = left.x / int64(right)
+//			}
+//			return v
+//		})
+//
+//	if len(name) > 0 {
+//		var err error
+//		adder.vb, err = Expose(name, "adder", DisplayOnAll, adder)
+//		if err != nil {
+//			return nil, err
+//		}
+//		adder.r.OnExpose()
+//		adder.w, err = NewWindow(name, "adder_window", DisplayOnAll, defaultDumpInterval,
+//			adder.r.GetWindowSampler(), SeriesInSecond, adder.r.op, adder.r.seriesDivOp)
+//		if err != nil {
+//			srv.remove(adder.vb.id)
+//			return nil, err
+//		}
+//		f := func(v Value) string {
+//			return strconv.Itoa(int(v.x))
+//		}
+//		adder.w.SetDescriber(f, func(v Value, idx int) string {
+//			return f(v)
+//		})
+//	}
+//	return adder, nil
+//}
+func NewAdder(name string) (*Adder, error) {
+	adder := &Adder{}
+	adder.r = NewReducer(
 		func(dst, src Value) Value {
 			return dst.Add(&src)
 		},
@@ -63,13 +99,9 @@ func NewAdder(prefix, name string, filter DisplayFilter) (*Adder, error) {
 			return v
 		})
 
-	adder := &Adder{
-		r: r,
-	}
-
 	if len(name) > 0 {
 		var err error
-		adder.vb, err = Expose(prefix, name, filter, adder)
+		adder.vb, err = Expose(name, "adder", DisplayOnAll, adder)
 		if err != nil {
 			return nil, err
 		}

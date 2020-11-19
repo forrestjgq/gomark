@@ -16,14 +16,11 @@ func (m *Maxer) VarBase() *VarBase {
 
 func (m *Maxer) Dispose() {
 	m.r.Dispose()
+	m.r = nil
 }
 
 func (m *Maxer) Push(v Mark) {
 	m.r.Push(v)
-}
-
-func (m *Maxer) OnSample() {
-	m.r.OnSample()
 }
 
 func (m *Maxer) Describe(w io.StringWriter, quote bool) {
@@ -39,14 +36,11 @@ func (m *Maxer) DescribeSeries(w io.StringWriter, opt *SeriesOption) error {
 }
 
 func NewMaxerNoExpose() (*Maxer, error) {
-	return NewMaxer("", "", DisplayOnNothing)
-}
-func NewMaxerWithName(name string) (*Maxer, error) {
-	return NewMaxer(name, "max", DisplayOnAll)
+	return NewMaxer("")
 }
 
 // NewMaxer create an maxer
-func NewMaxer(prefix, name string, filter DisplayFilter) (*Maxer, error) {
+func NewMaxer(name string) (*Maxer, error) {
 	r := NewReducer(
 		func(dst, src Value) Value {
 			if dst.x >= src.x {
@@ -63,7 +57,7 @@ func NewMaxer(prefix, name string, filter DisplayFilter) (*Maxer, error) {
 
 	if len(name) > 0 {
 		var err error
-		maxer.vb, err = Expose(prefix, name, filter, maxer)
+		maxer.vb, err = Expose(name, "max", DisplayOnAll, maxer)
 		if err != nil {
 			return nil, err
 		}

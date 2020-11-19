@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/nsf/termbox-go"
+
 	"github.com/forrestjgq/gomark/internal/gm"
 
 	"github.com/golang/glog"
@@ -13,16 +15,23 @@ import (
 	"github.com/forrestjgq/gomark"
 )
 
-func testWindowMaxer(total int) {
-	glog.Info("Window Maxer")
-	wm := gomark.NewWindowMaxer("WindowMaxer")
+func init() {
+	if err := termbox.Init(); err != nil {
+		panic(err)
+	}
+	termbox.SetCursor(0, 0)
+	termbox.HideCursor()
+}
+func testMaxWindow(total int) {
+	glog.Info("Maxer window")
+	ad := gomark.NewWindowMaxer("hello")
 	for i := 0; i < total; i++ {
-		v := rand.Int31n(100) + 1
-		wm.Mark(v)
-		//glog.Infof("window maxer mark %d", v)
+		v := rand.Int31n(10) + 1
+		ad.Mark(v)
+		//glog.Infof("mark %d", v)
 		time.Sleep(100 * time.Millisecond)
 	}
-	wm.Cancel()
+	ad.Cancel()
 	gm.MakeSureEmpty()
 }
 func testMaxer(total int) {
@@ -41,7 +50,7 @@ func testAdder(total int) {
 	glog.Info("Adder")
 	ad := gomark.NewAdder("hello")
 	for i := 0; i < total; i++ {
-		v := rand.Int31n(10) + 1
+		v := rand.Int31n(11) - 5
 		ad.Mark(v)
 		//glog.Infof("mark %d", v)
 		time.Sleep(100 * time.Millisecond)
@@ -83,7 +92,7 @@ func testLatencyRecorder(total int) {
 		v := rand.Int31n(100) + 1
 		//lr.Mark(70)
 		lr.Mark(v)
-		//glog.Infof("mark %d", v)
+		glog.Infof("mark %d", v)
 		time.Sleep(time.Duration(rand.Intn(28)*3+17) * time.Millisecond)
 	}
 
@@ -105,20 +114,44 @@ func testPecentile(total int) {
 	gm.MakeSureEmpty()
 }
 
+var stop = false
+
+func wait(test string) {
+	if !stop {
+		return
+	}
+
+	glog.Info("press any key to start ", test)
+Loop:
+	for {
+		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventKey:
+			break Loop
+		}
+	}
+}
 func main() {
 	total := 0
 	port := 0
+	flag.BoolVar(&stop, "s", false, "set to true to test step by step")
 	flag.IntVar(&total, "n", math.MaxInt64-1, "how many time for each var to run, not present for infinite")
 	flag.IntVar(&port, "p", 7770, "http port, default 7770")
 	flag.Parse()
 	gomark.StartHTTPServer(port)
 
+	wait("testMaxWindow")
+	testMaxWindow(total)
+	wait("testMaxer")
 	testMaxer(total)
-	testLatencyRecorder(total)
-	testQPS(total)
-	testWindowMaxer(total)
+	wait("testAdder")
 	testAdder(total)
+	wait("testLatencyRecorder")
+	testLatencyRecorder(total)
+	wait("testQPS")
+	testQPS(total)
+	wait("testCounter")
 	testCounter(total)
+	wait("testPercentile")
 	testPecentile(total)
 	glog.Info("exit")
 

@@ -6,11 +6,18 @@ import (
 )
 
 type Reducer struct {
-	op, invOp   Operator
-	seriesDivOp OperatorInt
-	value       Value
-	sampler     *ReducerSampler
-	series      *IntSeries
+	op, invOp     Operator
+	seriesDivOp   OperatorInt
+	value         Value
+	sampler       *ReducerSampler
+	series        *IntSeries
+	seriesSampler disposer
+}
+
+func (r *Reducer) takeSample() {
+	if r.series != nil {
+		r.series.Append(r.GetValue())
+	}
 }
 
 func (r *Reducer) Operators() (op Operator, invOp Operator) {
@@ -29,6 +36,12 @@ func (r *Reducer) GetValue() Value {
 func (r *Reducer) Dispose() {
 	if r.sampler != nil {
 		r.sampler.dispose()
+		r.sampler = nil
+	}
+	if r.seriesSampler != nil {
+		r.seriesSampler()
+		r.seriesSampler = nil
+		r.series = nil
 	}
 }
 func (r *Reducer) Reset() Value {
@@ -47,8 +60,8 @@ func (r *Reducer) Describe(w io.StringWriter, serial func(v Value) string) {
 }
 func (r *Reducer) DescribeSeries(w io.StringWriter, opt *SeriesOption, splitName []string, cvt ValueConverter) error {
 	// see reducer.h, Reducer::describe_series
-	if r.sampler == nil {
-		return errors.New("sampler is not created")
+	if r.series == nil {
+		return errors.New("series sampler is not created")
 	}
 
 	if !opt.TestOnly {
@@ -59,14 +72,7 @@ func (r *Reducer) DescribeSeries(w io.StringWriter, opt *SeriesOption, splitName
 func (r *Reducer) OnExpose() {
 	if r.series == nil && r.invOp != nil && r.seriesDivOp != nil && flagSaveSeries {
 		r.series = NewIntSeries(r.op, r.seriesDivOp)
-	}
-}
-func (r *Reducer) OnSample() {
-	if r.sampler != nil {
-		r.sampler.takeSample()
-	}
-	if r.series != nil {
-		r.series.Append(r.GetValue())
+		r.seriesSampler = AddSampler(r)
 	}
 }
 
@@ -75,7 +81,6 @@ func NewReducer(op, invOp Operator, seriesDivOp OperatorInt) *Reducer {
 		op:          op,
 		invOp:       invOp,
 		seriesDivOp: seriesDivOp,
-		sampler:     nil,
 	}
 	return r
 }

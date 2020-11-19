@@ -11,7 +11,7 @@ func NewWindowMaxerIn(name string, window int) (*Window, error) {
 	}
 	maxLatency, _ := NewMaxerNoExpose()
 	maxOp, _ := maxLatency.r.Operators()
-	maxLatencyWindow, err := NewWindow("", name, DisplayOnAll, window,
+	maxLatencyWindow, err := NewWindow(name, "max_window", DisplayOnAll, window,
 		maxLatency.r.GetWindowSampler(),
 		SeriesInSecond,
 		maxOp,

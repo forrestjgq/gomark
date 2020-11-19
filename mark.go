@@ -28,6 +28,7 @@ func StartHTTPServer(port int) {
 	}
 	httpsrv.Start(port)
 }
+
 // NewLatencyRecorder create a latency recorder.
 func NewLatencyRecorder(name string) gmi.Marker {
 	var ret gmi.Marker
@@ -39,17 +40,19 @@ func NewLatencyRecorder(name string) gmi.Marker {
 	})
 	return ret
 }
-// NewAdder create an adder.
+
+// NewAdder create an adder with series.
 func NewAdder(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
-		add, err := gm.NewAdderWithName(name)
+		add, err := gm.NewAdder(name)
 		if err == nil {
 			ret = add.VarBase()
 		}
 	})
 	return ret
 }
+
 // NewCounter provide a passive status for counter.
 // I prefer you use NewAdder instead.
 func NewCounter(name string) gmi.Marker {
@@ -62,6 +65,7 @@ func NewCounter(name string) gmi.Marker {
 	})
 	return ret
 }
+
 // NewQPS provide QPS statistics.
 func NewQPS(name string) gmi.Marker {
 	var ret gmi.Marker
@@ -73,17 +77,19 @@ func NewQPS(name string) gmi.Marker {
 	})
 	return ret
 }
-// NewMaxer provide maximum value collecting.
+
+// NewMaxer saves max value(no series)
 func NewMaxer(name string) gmi.Marker {
 	var ret gmi.Marker
 	gm.RemoteCall(func() {
-		w, err := gm.NewMaxerWithName(name)
+		w, err := gm.NewMaxer(name)
 		if err == nil {
 			ret = w.VarBase()
 		}
 	})
 	return ret
 }
+
 // NewWindowMaxer collects max values in each period.
 func NewWindowMaxer(name string) gmi.Marker {
 	var ret gmi.Marker
