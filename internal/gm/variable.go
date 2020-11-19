@@ -2,6 +2,8 @@ package gm
 
 import (
 	"io"
+
+	"github.com/forrestjgq/gomark/gmi"
 )
 
 type DisplayFilter int
@@ -48,6 +50,9 @@ type VarBase struct {
 
 func (vb *VarBase) EnablePerf() {
 	vb.perf = true
+}
+func (vb *VarBase) Marker() gmi.Marker {
+	return vb.id
 }
 func (vb *VarBase) Mark(n int32) {
 	if vb != nil && vb.Valid() {

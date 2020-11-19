@@ -1,6 +1,20 @@
 package gm
 
 type Identity uint32
+
+func (i Identity) Mark(n int32) {
+	if i != 0 {
+		s := makeStub(i, Mark(n))
+		PushStub(s)
+	}
+}
+
+func (i Identity) Cancel() {
+	if i != 0 {
+		RemoveVariable(i)
+	}
+}
+
 type Mark int32
 
 type stub struct {
