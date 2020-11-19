@@ -35,12 +35,32 @@ func Start(port int) {
 	r.HandleFunc("/js/{script}", procJs)
 	r.HandleFunc("/vars", procVar)
 	r.HandleFunc("/vars/{var}", procVar)
+	r.HandleFunc("/debug", procDebug)
 	server.r = r
 
 	go func() {
 		err := http.ListenAndServe(":"+strconv.Itoa(port), r)
 		glog.Info("server stops, error: ", err)
 	}()
+}
+
+func procDebug(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(400)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	p := r.Form.Get("perf")
+	if p == "1" {
+		gm.EnableInternalVariables()
+		_, _ = w.Write([]byte("internal variables enabled"))
+	} else if p == "0" {
+		gm.DisableInternalVariables()
+		_, _ = w.Write([]byte("internal variables disabled"))
+	}
+
 }
 
 var lastModified = "Wed, 16 Sep 2015 01:25:30 GMT"

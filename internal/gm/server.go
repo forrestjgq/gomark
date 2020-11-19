@@ -41,6 +41,7 @@ type server struct {
 	markLatency       *LatencyRecorder
 	remoteCallLatency *LatencyRecorder
 	exposeAdder       *Adder
+	samplerAdder      *Adder
 }
 
 var srv *server
@@ -122,6 +123,9 @@ func (s *server) remove(id Identity) {
 			}
 		}
 		delete(s.all, id)
+		if s.exposeAdder != nil {
+			s.exposeAdder.Push(-1)
+		}
 	}
 }
 func (s *server) describe(v Variable, w io.StringWriter, quoteString bool, filter DisplayFilter) error {
@@ -269,6 +273,9 @@ func Expose(prefix, name string, displayFilter DisplayFilter, v Variable) (*VarB
 		}
 	}
 	srv.all[vb.id] = v
+	if srv.exposeAdder != nil {
+		srv.exposeAdder.Push(1)
+	}
 
 	return vb, nil
 }
@@ -315,8 +322,14 @@ func PushStub(s stub) {
 
 func AddSampler(s sampler) disposer {
 	id := srv.addSample(s)
+	if srv.samplerAdder != nil {
+		srv.samplerAdder.Push(1)
+	}
 	return func() {
 		srv.removeSample(id)
+		if srv.samplerAdder != nil {
+			srv.samplerAdder.Push(-1)
+		}
 	}
 }
 
@@ -349,16 +362,34 @@ func MakeSureEmpty() {
 }
 func DisableInternalVariables() {
 	t := srv.sampleLatency
-	srv.sampleLatency = nil
-	t.vb.Cancel()
+	if t != nil {
+		srv.sampleLatency = nil
+		t.vb.Cancel()
+	}
 
 	t = srv.markLatency
-	srv.markLatency = nil
-	t.vb.Cancel()
+	if t != nil {
+		srv.markLatency = nil
+		t.vb.Cancel()
+	}
 
-	t = srv.markLatency
-	srv.markLatency = nil
-	t.vb.Cancel()
+	t = srv.remoteCallLatency
+	if t != nil {
+		srv.remoteCallLatency = nil
+		t.vb.Cancel()
+	}
+
+	a := srv.exposeAdder
+	if a != nil {
+		srv.exposeAdder = nil
+		a.vb.Cancel()
+	}
+
+	a = srv.samplerAdder
+	if a != nil {
+		srv.samplerAdder = nil
+		a.vb.Cancel()
+	}
 }
 func EnableInternalVariables() {
 	if srv.sampleLatency == nil {
@@ -372,5 +403,10 @@ func EnableInternalVariables() {
 	}
 	if srv.exposeAdder == nil {
 		srv.exposeAdder, _ = NewAdder("internal_variable")
+		srv.exposeAdder.Push(Mark(len(srv.all)))
+	}
+	if srv.samplerAdder == nil {
+		srv.samplerAdder, _ = NewAdder("internal_sampler")
+		srv.exposeAdder.Push(Mark(len(srv.samplers)))
 	}
 }
