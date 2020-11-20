@@ -3,11 +3,18 @@ project(gmhook)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(BRPC_PATH "/code/vse/third_party/output/brpc")
-add_definitions(-DBRPC)
-include_directories(${BRPC_PATH}/include)
+list(APPEND EXLIBS "")
+
+# BRPC is path of brpc installation
+if (BRPC)
+    add_definitions(-DBRPC)
+    include_directories(${BRPC}/include)
+    list(APPEND EXLIBS "-lbrpc")
+    link_directories(${BRPC}/lib)
+endif ()
 
 add_library(gmhook SHARED gmhook.cpp gmhook.h)
+target_link_libraries(gmhook "-Wl,-Bdynamic" ${EXLIBS})
 
 install(TARGETS gmhook
         RUNTIME DESTINATION bin
