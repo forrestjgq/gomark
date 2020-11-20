@@ -106,7 +106,7 @@ func (q *sampleQueue) oldestIn(n int) sample {
 	} else if n >= q.size() {
 		n = q.size() - 1
 	}
-	return q.q[(q.start+n)%len(q.q)]
+	return q.q[(q.start+q.size()-n-1)%len(q.q)]
 }
 func (q *sampleQueue) size() int {
 	return q.sz

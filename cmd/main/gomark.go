@@ -28,6 +28,7 @@ func wait(test string) {
 func pause() {
 	if mode != "perf" {
 		time.Sleep(time.Duration(rand.Intn(28)*3+17) * time.Millisecond)
+		//time.Sleep(time.Second)
 	}
 }
 
@@ -73,6 +74,34 @@ func testAdder(name string, total int) {
 	for i := 0; i < total; i++ {
 		v := rand.Int31n(11) - 5
 		ad.Mark(v)
+		//glog.Infof("mark %d", v)
+		pause()
+	}
+	reportPerf(name, start, total)
+	ad.Cancel()
+	gm.MakeSureEmpty()
+}
+func testAdderPerSecond(name string, total int) {
+	wait(name)
+	ad := gomark.NewAdderPerSecond(name)
+	start := time.Now()
+	for i := 0; i < total; i++ {
+		//v := rand.Int31n(11) - 5
+		ad.Mark(10)
+		//glog.Infof("mark %d", v)
+		pause()
+	}
+	reportPerf(name, start, total)
+	ad.Cancel()
+	gm.MakeSureEmpty()
+}
+func testStatus(name string, total int) {
+	wait(name)
+	ad := gomark.NewStatus(name)
+	start := time.Now()
+	for i := 0; i < total; i++ {
+		//v := rand.Int31n(11) - 5
+		ad.Mark(int32(i % 10))
 		//glog.Infof("mark %d", v)
 		pause()
 	}
@@ -175,6 +204,8 @@ func main() {
 		gm.EnableInternalVariables()
 
 		for i := 0; i < total; i++ {
+			go testStatus("testStatus", total)
+			go testAdderPerSecond("testAdderPerSecond", total)
 			go testMaxWindow("max_win_"+strconv.Itoa(i), math.MaxInt64)
 			go testMaxer("max_"+strconv.Itoa(i), math.MaxInt64)
 			go testAdder("adder_"+strconv.Itoa(i), math.MaxInt64)
@@ -197,6 +228,8 @@ func main() {
 
 	glog.Infof("mode: %s total %d", mode, total)
 
+	testAdderPerSecond("testAdderPerSecond", total)
+	testStatus("testStatus", total)
 	testMaxWindow("testMaxWindow", total)
 	testMaxer("testMaxer", total)
 	testAdder("testAdder", total)

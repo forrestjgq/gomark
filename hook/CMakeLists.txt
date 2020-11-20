@@ -3,6 +3,10 @@ project(gmhook)
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(BRPC_PATH "/code/vse/third_party/output/brpc")
+add_definitions(-DBRPC)
+include_directories(${BRPC_PATH}/include)
+
 add_library(gmhook SHARED gmhook.cpp gmhook.h)
 
 install(TARGETS gmhook

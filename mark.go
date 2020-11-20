@@ -52,6 +52,26 @@ func NewAdder(name string) gmi.Marker {
 	})
 	return ret
 }
+func NewAdderPerSecond(name string) gmi.Marker {
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		add, err := gm.NewAdderPersecond(name)
+		if err == nil {
+			ret = add.VarBase().Marker()
+		}
+	})
+	return ret
+}
+func NewStatus(name string) gmi.Marker {
+	var ret gmi.Marker
+	gm.RemoteCall(func() {
+		add, err := gm.NewStatus(name)
+		if err == nil {
+			ret = add.VarBase().Marker()
+		}
+	})
+	return ret
+}
 
 // NewCounter provide a passive status for counter.
 // I prefer you use NewAdder instead.

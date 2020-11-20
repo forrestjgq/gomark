@@ -44,6 +44,7 @@ func (w *Window) Dispose() {
 	}
 	w.sampler = nil
 	w.series = nil
+	w.receiver = nil
 }
 
 func (w *Window) VarBase() *VarBase {

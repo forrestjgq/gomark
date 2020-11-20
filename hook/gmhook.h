@@ -9,6 +9,9 @@ extern "C" {
 
 #define VAR_LATENCY_RECORDER 0
 #define VAR_ADDER 1
+#define VAR_MAXER 2
+#define VAR_STATUS 3
+#define VAR_PERSECOND_ADDER 4
 
 typedef int (*gm_var_creator)(int var_type, const char *name);
 typedef void (*gm_var_marker)(int id, int value);
