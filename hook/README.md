@@ -69,7 +69,7 @@ recoder << 4;
 recorder << val1 << val2 << val3;
 // when recorder destructs, it dispose resources automatically.
 ```
-## bvar user
+## Work with bvar
 You may familiar with bvar usage:
 ```cpp
 bvar::LatencyRecorder recorder("some_recorder");
