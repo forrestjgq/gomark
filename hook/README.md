@@ -31,7 +31,28 @@ gomark hook will install:
 - `libgmhook.so`: gmhook library 
 
 # Usage
-## GmVariable and how to use
+## Vairable types
+As defined in gmhook.h:
+```c
+// gmhook.h
+#define VAR_LATENCY_RECORDER 0
+#define VAR_ADDER 1
+#define VAR_MAXER 2
+#define VAR_STATUS 3
+#define VAR_PERSECOND_ADDER 4
+```
+Each of these defines a variable type.
+
+## C user
+C program should call these functions to create/mark/cancel variable:
+```c
+// gmhook.h
+int gm_var_create(int var_type, const char *name);
+void gm_var_mark(int id, int value);
+void gm_var_cancel(int id);
+```
+
+## (CPP)GmVariable and how to use
 
 gomark hook provide a unified adapter:
 ```cpp
@@ -48,16 +69,7 @@ public:
 };
 ```
 
-A `GmVariable` acts as any kind of variable either bvar or gomark provides. To specify variable type, you need to provide a `type` in constructor or `expose()` along with variable `name`. The `type` definition is provided in:
-```c
-// gmhook.h
-#define VAR_LATENCY_RECORDER 0
-#define VAR_ADDER 1
-#define VAR_MAXER 2
-#define VAR_STATUS 3
-#define VAR_PERSECOND_ADDER 4
-```
-Each of these defines a variable type.
+A `GmVariable` acts as any kind of variable either bvar or gomark provides. To specify variable type, you need to provide a `type` in constructor or `expose()` along with variable `name`. 
 
 By calling `<<` you may mark a value, only this value is an `int32_t`, but it should be large enough.
 
@@ -69,7 +81,7 @@ recoder << 4;
 recorder << val1 << val2 << val3;
 // when recorder destructs, it dispose resources automatically.
 ```
-## Work with bvar
+## (CPP)Work with bvar
 You may familiar with bvar usage:
 ```cpp
 bvar::LatencyRecorder recorder("some_recorder");

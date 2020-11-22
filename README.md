@@ -38,9 +38,45 @@ type Marker interface {
 
 Call `Mark` to send a marking point to variable and `Cancel` to stop using(and never use it).
 
+# Working with C/CPP
+gomark is designed to work on GO. But it also provide an adapter to work with C/CPP.
+
+[adapter](adapter) provide C interfaces to call variable create/mark/cancel of gomark package. It works along with [hook](hook), which is a sub-project of gomark compiling to be a dynamic library `libgmhook.so` for C/CPP users.
+
+This is how it works: 
+1. gomark user calls `adapter.StartAdapter` to enable [hook](hook) connected with gomark by registering C callbacks to create/mark/cancel variables(`register_gm_hook`).
+2. C program working with gomark should directly call `gm_var_create`/`gm_var_mark`/`gm_var_cancel` in `libgmhook.so` to use gomark through adapter(adatper will call registered gomark callbacks).
+3. CPP program working with gomark may delcare `GmVariable` defined in [gmhookpp](hook/gmhookpp.h) to use gomark also through adatper.
+
+To use this feature, gomark user need:
+1. make hook and install, see [readme](hook/README.md)
+2. GO program should call `adapter.StartAdapter`
+3. add these two CGO flags in environment before building to let adapter found `libgmhook.so` and `gmhook.h`
+```sh
+export CGO_CFLAGS="-I/path_to_install_of_hook/include"
+export CGO_LDFLAGS="-L/path_to_install_of_hook/lib -lgmhook"
+```
+
+## Example
+
+[example](cmd/example/example.go) shows how to use adder and latency recorder. Actually all variables are used in the same way:
+1. create
+2. mark int32 values
+3. cancel
+
+
 # Monitor
 
 Visit http://ip:port/vars to monitor system statistics.
+
+This is how it looks like:
+
+![image](assets/var.png)
+
+You may click those clickable records, and you will see:
+
+![image](assets/var_expands.png)
+
 
 # Performance
 Test method: in one goroutine, continuouesly marking for 10 million marks, get the time elasped and
@@ -65,3 +101,5 @@ updated 2020.11.19
 go run gomark.go -stderrthreshold=INFO 
 ```
 Read the usage and run test.
+
+
