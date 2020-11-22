@@ -38,9 +38,24 @@ type Marker interface {
 
 Call `Mark` to send a marking point to variable and `Cancel` to stop using(and never use it).
 
+## Example
+
+[example](cmd/example/example.go) shows how to use adder and latency recorder. Actually all variables are used in the same way:
+1. create
+2. mark int32 values
+3. cancel
+
+
 # Monitor
 
 Visit http://ip:port/vars to monitor system statistics.
+
+This is how it looks like:
+![image](assets/var.png)
+
+You may click those clickable records, and you will see:
+![image](assets/var_expands.png)
+
 
 # Performance
 Test method: in one goroutine, continuouesly marking for 10 million marks, get the time elasped and
@@ -65,3 +80,5 @@ updated 2020.11.19
 go run gomark.go -stderrthreshold=INFO 
 ```
 Read the usage and run test.
+
+
