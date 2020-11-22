@@ -70,9 +70,11 @@ export CGO_LDFLAGS="-L/path_to_install_of_hook/lib -lgmhook"
 Visit http://ip:port/vars to monitor system statistics.
 
 This is how it looks like:
+
 ![image](assets/var.png)
 
 You may click those clickable records, and you will see:
+
 ![image](assets/var_expands.png)
 
 
