@@ -103,3 +103,5 @@ go run gomark.go -stderrthreshold=INFO
 Read the usage and run test.
 
 
+# TODOs
+1. Provide interface for Prometheus
