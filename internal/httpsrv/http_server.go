@@ -34,10 +34,10 @@ func Start(port int) {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/js/{script}", procJs)
+	r.HandleFunc("/vars/js/{script}", procJs)
 	r.HandleFunc("/vars", procVar)
 	r.HandleFunc("/vars/{var}", procVar)
-	r.HandleFunc("/debug", procDebug)
+	r.HandleFunc("/vars/debug", procDebug)
 	server.r = r
 
 	go func() {
@@ -56,7 +56,7 @@ func RequestHTTP(req *gmi.Request) *gmi.Response {
 		return serveVar(req)
 	default:
 		return &gmi.Response{
-			Status:  404,
+			Status: 404,
 		}
 	}
 }
@@ -66,7 +66,7 @@ func procDebug(w http.ResponseWriter, r *http.Request) {
 }
 func serveDebug(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{
-		Status:  200,
+		Status: 200,
 	}
 	p := req.GetParam("perf")
 	if p == "1" {
@@ -90,7 +90,7 @@ func procJs(w http.ResponseWriter, r *http.Request) {
 func serveJs(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{
 		Status: 200,
-		Body: nil,
+		Body:   nil,
 	}
 
 	rsp.SetHeader("content-type", "application/javascript")
@@ -181,7 +181,7 @@ func procVar(w http.ResponseWriter, r *http.Request) {
 }
 func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 	req := &gmi.Request{
-		Params:  make(map[string]string),
+		Params: make(map[string]string),
 	}
 	vars := mux.Vars(r)
 	for k, v := range vars {
@@ -225,7 +225,7 @@ func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 }
 func serveVar(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{
-		Status:  200,
+		Status: 200,
 	}
 
 	buf := &bytes.Buffer{}

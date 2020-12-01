@@ -13,6 +13,43 @@ gomark monitor variable statistics through HTTP web server, so you need call
 StartHTTPServer(port int)
 ```
 to start HTTP service before using.
+### Dock gomark to external HTTP server
+Maybe you have your own HTTP server and you wish to dock gomark to it instead of create a new one. GoMark actually supports this deployment. You need:
+#### Add routers
+GoMark requires the following routers:
+```go
+	r := mux.NewRouter()
+	r.HandleFunc("/vars/js/{script}", procJs) // Route: js
+	r.HandleFunc("/vars", procVar) // Route: vars
+	r.HandleFunc("/vars/{var}", procVar) // Route: vars
+	r.HandleFunc("/vars/debug", procDebug) // Route: debug
+```
+Here `{xxx}` indicate a path variable, like`/vars/test_adder` or `/vars/*adder*`.
+
+Note that each router may require additional path parameters in form `?a=b` or `?a`, like `/vars/test_adder?dataonly`, here `dataonly` is a parameter, or `/vars/debug?p=1`, here `p` is a parameter.
+
+Both path variables or parameters are stored in `gmi.Request` along with headers:
+```go
+type Request struct {
+	Router  Route
+	Params  map[string]string
+	headers map[string]string
+}
+```
+You need fill them from HTTP request.
+
+You may note that no URL is required here, that's because `Router` defines a string to represent above routes, see comments.
+
+Like `gmi.Request`, `gmi.Response` defines all information you need to write into HTTP response, make sure you write them all.
+```go
+type Response struct {
+	Status  int
+	headers map[string]string
+	Body    []byte
+}
+```
+#### Call GoMark on receiving HTTP requests
+In your routing handler, you need convert HTTP request to `gmi.Request` and call `gomark.Request`, and write returned `gmi.Response` to HTTP response.
 
 ## Variable Create
 A variable is an entity that maintains all information of statistics. There are several variables, and can be created by:
