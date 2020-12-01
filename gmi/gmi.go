@@ -1,6 +1,8 @@
 // Package gmi defines Marker to represent each variable by interface.
 package gmi
 
+import "net/textproto"
+
 // Marker is an interface to provide variable marking.
 type Marker interface {
 	// Mark a number, the number definition is bound to marker itself.
@@ -18,8 +20,8 @@ const (
 
 type Request struct {
 	Router  Route
-	Headers map[string]string
 	Params  map[string]string
+	headers map[string]string
 }
 
 func (r *Request) GetParam(key string) string {
@@ -38,9 +40,45 @@ func (r *Request) HasParam(key string) bool {
 	_, ok := r.Params[key]
 	return ok
 }
+func (r *Request) GetHeader(key string) string {
+	if r.headers == nil {
+		return ""
+	}
+	if v, ok := r.headers[textproto.CanonicalMIMEHeaderKey(key)]; ok {
+		return v
+	}
+	return ""
+}
+func (r *Request) SetHeader(key, value string) {
+	if r.headers == nil {
+		r.headers = make(map[string]string)
+	}
+	r.headers[textproto.CanonicalMIMEHeaderKey(key)] = value
+}
 
 type Response struct {
 	Status  int
-	Headers map[string]string
+	headers map[string]string
 	Body    []byte
+}
+func (r *Response) SetHeader(key, value string) {
+	if r.headers == nil {
+		r.headers = make(map[string]string)
+	}
+	r.headers[textproto.CanonicalMIMEHeaderKey(key)] = value
+}
+func (r *Response) GetHeaders() map[string]string {
+	if r.headers == nil {
+		r.headers = make(map[string]string)
+	}
+	return r.headers
+}
+func (r *Response) GetHeader(key string) string {
+	if r.headers == nil {
+		return ""
+	}
+	if v, ok := r.headers[textproto.CanonicalMIMEHeaderKey(key)]; ok {
+		return v
+	}
+	return ""
 }

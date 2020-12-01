@@ -24,11 +24,6 @@ type httpServer struct {
 }
 
 var server *httpServer
-var headers = []string{
-	"If-Modified-Since",
-	"console",
-	"user-agent",
-}
 
 func Start(port int) {
 	var err error
@@ -62,8 +57,6 @@ func RequestHTTP(req *gmi.Request) *gmi.Response {
 	default:
 		return &gmi.Response{
 			Status:  404,
-			Headers: nil,
-			Body:    nil,
 		}
 	}
 }
@@ -74,8 +67,6 @@ func procDebug(w http.ResponseWriter, r *http.Request) {
 func serveDebug(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{
 		Status:  200,
-		Headers: make(map[string]string),
-		Body:    nil,
 	}
 	p := req.GetParam("perf")
 	if p == "1" {
@@ -99,18 +90,17 @@ func procJs(w http.ResponseWriter, r *http.Request) {
 func serveJs(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{
 		Status: 200,
-		Headers: map[string]string{
-			"content-type": "application/javascript",
-		},
 		Body: nil,
 	}
 
+	rsp.SetHeader("content-type", "application/javascript")
+
 	if v, ok := req.Params["script"]; ok {
-		if m, exist := req.Headers["If-Modified-Since"]; exist && m == lastModified {
+		if req.GetHeader("If-Modified-Since") == lastModified {
 			rsp.Status = 304
 			return
 		}
-		rsp.Headers["Last-Modified"] = lastModified
+		rsp.SetHeader("Last-Modified", lastModified)
 		if v == "jquery_min" {
 			rsp.Body = []byte(jqueryMinJs)
 		} else if v == "flot_min" {
@@ -124,16 +114,14 @@ func serveJs(req *gmi.Request) (rsp *gmi.Response) {
 	return
 }
 
-func useHtml(h map[string]string) bool {
-	if h == nil {
-		return true
-	}
-
-	if v, ok := h["console"]; ok && len(v) > 0 {
+func useHtml(req *gmi.Request) bool {
+	v := req.GetHeader("console")
+	if len(v) > 0 {
 		return v == "0"
 	}
 
-	if v, ok := h["user-agent"]; !ok || len(v) == 0 {
+	v = req.GetHeader("user-agent")
+	if len(v) == 0 {
 		return false
 	} else if strings.Index(v, "curl/") < 0 {
 		return true
@@ -194,7 +182,6 @@ func procVar(w http.ResponseWriter, r *http.Request) {
 func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 	req := &gmi.Request{
 		Params:  make(map[string]string),
-		Headers: make(map[string]string),
 	}
 	vars := mux.Vars(r)
 	for k, v := range vars {
@@ -213,11 +200,7 @@ func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 	}
 
 	for k := range r.Header {
-		req.Headers[k] = r.Header.Get(k)
-	}
-
-	for _, k := range headers {
-		req.Headers[k] = r.Header.Get(k)
+		req.SetHeader(k, r.Header.Get(k))
 	}
 
 	var rsp *gmi.Response
@@ -228,12 +211,13 @@ func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 		rsp = serveDebug(req)
 	case gmi.RouteJs:
 		rsp = serveJs(req)
+	default:
+		w.WriteHeader(404)
+		return
 	}
 	w.WriteHeader(rsp.Status)
-	if len(rsp.Headers) > 0 {
-		for k, v := range rsp.Headers {
-			w.Header().Add(k, v)
-		}
+	for k, v := range rsp.GetHeaders() {
+		w.Header().Add(k, v)
 	}
 	if len(rsp.Body) > 0 {
 		_, _ = w.Write(rsp.Body)
@@ -242,8 +226,6 @@ func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 func serveVar(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{
 		Status:  200,
-		Headers: make(map[string]string),
-		Body:    nil,
 	}
 
 	buf := &bytes.Buffer{}
@@ -266,15 +248,15 @@ func serveVar(req *gmi.Request) (rsp *gmi.Response) {
 		return
 	}
 
-	html := useHtml(req.Headers)
+	html := useHtml(req)
 	tabs := false
 	if html && !req.HasParam("dataonly") {
 		tabs = true
 	}
 	if html {
-		rsp.Headers["content-type"] = "text/html"
+		rsp.SetHeader("content-type", "text/html")
 	} else {
-		rsp.Headers["content-type"] = "text/plain"
+		rsp.SetHeader("content-type", "text/plain")
 	}
 
 	dumper := &dumpImpl{html: html}
