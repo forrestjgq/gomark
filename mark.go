@@ -29,6 +29,11 @@ func StartHTTPServer(port int) {
 	httpsrv.Start(port)
 }
 
+// Request will docker gomark to your own http server
+func Request(req *gmi.Request) *gmi.Response {
+	return httpsrv.RequestHTTP(req)
+}
+
 // NewLatencyRecorder create a latency recorder.
 func NewLatencyRecorder(name string) gmi.Marker {
 	var ret gmi.Marker

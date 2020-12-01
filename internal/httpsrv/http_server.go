@@ -8,6 +8,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/forrestjgq/gomark/gmi"
+
 	"github.com/golang/glog"
 
 	"github.com/forrestjgq/gomark/internal/gm"
@@ -22,6 +24,11 @@ type httpServer struct {
 }
 
 var server *httpServer
+var headers = []string{
+	"If-Modified-Since",
+	"console",
+	"user-agent",
+}
 
 func Start(port int) {
 	var err error
@@ -44,69 +51,91 @@ func Start(port int) {
 	}()
 }
 
-func procDebug(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		w.WriteHeader(400)
-		_, _ = w.Write([]byte(err.Error()))
-		return
+func RequestHTTP(req *gmi.Request) *gmi.Response {
+	switch req.Router {
+	case gmi.RouteJs:
+		return serveJs(req)
+	case gmi.RouteDebug:
+		return serveDebug(req)
+	case gmi.RouteVars:
+		return serveVar(req)
+	default:
+		return &gmi.Response{
+			Status:  404,
+			Headers: nil,
+			Body:    nil,
+		}
 	}
+}
 
-	p := r.Form.Get("perf")
+func procDebug(w http.ResponseWriter, r *http.Request) {
+	proc(gmi.RouteDebug, w, r)
+}
+func serveDebug(req *gmi.Request) (rsp *gmi.Response) {
+	rsp = &gmi.Response{
+		Status:  200,
+		Headers: make(map[string]string),
+		Body:    nil,
+	}
+	p := req.GetParam("perf")
 	if p == "1" {
 		gm.EnableInternalVariables()
-		_, _ = w.Write([]byte("internal variables enabled"))
+		rsp.Body = []byte("internal variables enabled")
 	} else if p == "0" {
 		gm.DisableInternalVariables()
-		_, _ = w.Write([]byte("internal variables disabled"))
+		rsp.Body = []byte("internal variables disabled")
+	} else {
+		rsp.Status = 404
 	}
 
+	return
 }
 
 var lastModified = "Wed, 16 Sep 2015 01:25:30 GMT"
 
 func procJs(w http.ResponseWriter, r *http.Request) {
-	glog.Info("js")
-	vars := mux.Vars(r)
-	w.Header().Add("content-type", "application/javascript")
+	proc(gmi.RouteJs, w, r)
+}
+func serveJs(req *gmi.Request) (rsp *gmi.Response) {
+	rsp = &gmi.Response{
+		Status: 200,
+		Headers: map[string]string{
+			"content-type": "application/javascript",
+		},
+		Body: nil,
+	}
 
-	if v, ok := vars["script"]; ok {
-		m := r.Header.Get("If-Modified-Since")
-		if m == lastModified {
-			glog.Info("no modify")
-			w.WriteHeader(304)
+	if v, ok := req.Params["script"]; ok {
+		if m, exist := req.Headers["If-Modified-Since"]; exist && m == lastModified {
+			rsp.Status = 304
 			return
 		}
-
-		w.Header().Add("Last-Modified", lastModified)
+		rsp.Headers["Last-Modified"] = lastModified
 		if v == "jquery_min" {
-			_, _ = w.Write([]byte(jqueryMinJs))
+			rsp.Body = []byte(jqueryMinJs)
 		} else if v == "flot_min" {
-			_, _ = w.Write([]byte(flotMinJs))
+			rsp.Body = []byte(flotMinJs)
 		} else {
-			w.WriteHeader(404)
+			rsp.Status = 404
 		}
 	} else {
-		w.WriteHeader(404)
+		rsp.Status = 404
 	}
+	return
 }
 
-func useHtml(h *http.Header) bool {
+func useHtml(h map[string]string) bool {
 	if h == nil {
 		return true
 	}
 
-	v := h.Get("console")
-	if len(v) > 0 {
+	if v, ok := h["console"]; ok && len(v) > 0 {
 		return v == "0"
 	}
 
-	v = h.Get("user-agent")
-	if len(v) == 0 {
+	if v, ok := h["user-agent"]; !ok || len(v) == 0 {
 		return false
-	}
-
-	if strings.Index(v, "curl/") < 0 {
+	} else if strings.Index(v, "curl/") < 0 {
 		return true
 	}
 
@@ -159,12 +188,18 @@ func (d *dumpImpl) Dump(name, desc string) bool {
 	return true
 }
 
-func hasParam(key string, r *http.Request) bool {
-	_, exist := r.Form[key]
-	return exist
-}
 func procVar(w http.ResponseWriter, r *http.Request) {
+	proc(gmi.RouteVars, w, r)
+}
+func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
+	req := &gmi.Request{
+		Params:  make(map[string]string),
+		Headers: make(map[string]string),
+	}
 	vars := mux.Vars(r)
+	for k, v := range vars {
+		req.Params[k] = v
+	}
 
 	err := r.ParseForm()
 	if err != nil {
@@ -173,35 +208,73 @@ func procVar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for k := range r.Form {
+		req.Params[k] = r.Form.Get(k)
+	}
+
+	for k := range r.Header {
+		req.Headers[k] = r.Header.Get(k)
+	}
+
+	for _, k := range headers {
+		req.Headers[k] = r.Header.Get(k)
+	}
+
+	var rsp *gmi.Response
+	switch route {
+	case gmi.RouteVars:
+		rsp = serveVar(req)
+	case gmi.RouteDebug:
+		rsp = serveDebug(req)
+	case gmi.RouteJs:
+		rsp = serveJs(req)
+	}
+	w.WriteHeader(rsp.Status)
+	if len(rsp.Headers) > 0 {
+		for k, v := range rsp.Headers {
+			w.Header().Add(k, v)
+		}
+	}
+	if len(rsp.Body) > 0 {
+		_, _ = w.Write(rsp.Body)
+	}
+}
+func serveVar(req *gmi.Request) (rsp *gmi.Response) {
+	rsp = &gmi.Response{
+		Status:  200,
+		Headers: make(map[string]string),
+		Body:    nil,
+	}
+
 	buf := &bytes.Buffer{}
-	if hasParam("series", r) {
-		ok := false
+	if req.HasParam("series") {
 		varName := ""
-		if varName, ok = vars["var"]; ok && len(varName) == 0 {
-			w.WriteHeader(400)
-			_, _ = w.Write([]byte("var name not present"))
+		if varName = req.GetParam("var"); len(varName) == 0 {
+			rsp.Status = 400
+			rsp.Body = []byte("var name not present")
 			return
 		}
+
 		opt := gm.SeriesOption{}
-		err = gm.DescribeVarSeries(varName, buf, opt)
+		err := gm.DescribeVarSeries(varName, buf, opt)
 		if err != nil {
-			w.WriteHeader(400)
-			_, _ = w.Write([]byte(err.Error()))
+			rsp.Status = 400
+			rsp.Body = []byte(err.Error())
 		} else {
-			_, _ = w.Write(buf.Bytes())
+			rsp.Body = buf.Bytes()
 		}
 		return
 	}
 
-	html := useHtml(&r.Header)
+	html := useHtml(req.Headers)
 	tabs := false
-	if html && !hasParam("dataonly", r) {
+	if html && !req.HasParam("dataonly") {
 		tabs = true
 	}
 	if html {
-		w.Header().Add("content-type", "text/html")
+		rsp.Headers["content-type"] = "text/html"
 	} else {
-		w.Header().Add("content-type", "text/plain")
+		rsp.Headers["content-type"] = "text/plain"
 	}
 
 	dumper := &dumpImpl{html: html}
@@ -211,24 +284,25 @@ func procVar(w http.ResponseWriter, r *http.Request) {
 	if html {
 		opt.DisplayFilter = gm.DisplayOnHTML
 	}
-	opt.WhiteWildcards = vars["var"]
+	opt.WhiteWildcards = req.GetParam("var")
 	n, err := gm.Dump(dumper, opt)
 	if err != nil {
-		w.WriteHeader(400)
-		_, _ = w.Write([]byte(err.Error()))
+		rsp.Status = 400
+		rsp.Body = []byte(err.Error())
 		return
 	}
 
 	if len(opt.WhiteWildcards) > 0 && n == 0 {
-		w.WriteHeader(400)
-		_, _ = w.Write([]byte("fail to find any var"))
+		rsp.Status = 400
+		rsp.Body = []byte("fail to find any var")
 		return
 	}
+
 	if tabs {
 		in := &Input{
 			Content: dumper.b.String(),
 		}
-		if hasParam("expand", r) {
+		if req.HasParam("expand") {
 			in.Click = "  $(\".variable\").click();\n"
 		} else {
 			in.Click = "  $(\".default_expand\").click();\n"
@@ -242,13 +316,17 @@ func procVar(w http.ResponseWriter, r *http.Request) {
 			in.ValueEnd = "        newValue += ']';\n"
 		}
 
+		w := &bytes.Buffer{}
 		err = server.template.Execute(w, in)
 		if err != nil {
-			w.WriteHeader(400)
-			return
+			rsp.Status = 400
+			rsp.Body = []byte(err.Error())
+		} else {
+			rsp.Body = w.Bytes()
 		}
 	} else {
-		_, _ = w.Write(dumper.b.Bytes())
+		rsp.Body = dumper.b.Bytes()
 	}
 
+	return
 }
