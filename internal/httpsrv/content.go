@@ -5,8 +5,8 @@ var htmlContent = `
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <script language="javascript" type="text/javascript" src="/js/jquery_min"></script>
-    <script language="javascript" type="text/javascript" src="/js/flot_min"></script>
+    <script language="javascript" type="text/javascript" src="/vars/js/jquery_min"></script>
+    <script language="javascript" type="text/javascript" src="/vars/js/flot_min"></script>
     <style type="text/css">
         ol,ul { list-style:none; }
         .tabs-menu {
