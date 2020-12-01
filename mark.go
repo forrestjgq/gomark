@@ -29,6 +29,13 @@ func StartHTTPServer(port int) {
 	httpsrv.Start(port)
 }
 
+// Request will docker gomark to your own http server
+// See http_server.go for detailed information, there Start() will start an http
+// server based on mux, and it will call the same API as this calls.
+func Request(req *gmi.Request) *gmi.Response {
+	return httpsrv.RequestHTTP(req)
+}
+
 // NewLatencyRecorder create a latency recorder.
 func NewLatencyRecorder(name string) gmi.Marker {
 	var ret gmi.Marker

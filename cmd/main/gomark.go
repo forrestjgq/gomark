@@ -204,8 +204,8 @@ func main() {
 		gm.EnableInternalVariables()
 
 		for i := 0; i < total; i++ {
-			go testStatus("testStatus", total)
-			go testAdderPerSecond("testAdderPerSecond", total)
+			go testStatus("testStatus_"+strconv.Itoa(i), math.MaxInt64)
+			go testAdderPerSecond("testAdderPerSecond_"+strconv.Itoa(i), math.MaxInt64)
 			go testMaxWindow("max_win_"+strconv.Itoa(i), math.MaxInt64)
 			go testMaxer("max_"+strconv.Itoa(i), math.MaxInt64)
 			go testAdder("adder_"+strconv.Itoa(i), math.MaxInt64)
@@ -214,7 +214,6 @@ func main() {
 			go testCounter("counter_"+strconv.Itoa(i), math.MaxInt64)
 		}
 
-		go testPecentile(total)
 		wg.Wait()
 	default:
 		glog.Info("unknown mode: ", mode)
