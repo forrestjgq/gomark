@@ -1,3 +1,21 @@
+- [Introduce](#introduce)
+- [Usage](#usage)
+  * [Init](#init)
+    + [Dock gomark to external HTTP server](#dock-gomark-to-external-http-server)
+      - [Add routers](#add-routers)
+      - [Call GoMark on receiving HTTP requests](#call-gomark-on-receiving-http-requests)
+      - [Examples](#examples)
+  * [Variable Create](#variable-create)
+    + [Latency](#latency)
+- [Working with C/CPP](#working-with-c-cpp)
+  * [Example](#example)
+- [Monitor](#monitor)
+- [Performance](#performance)
+- [Test](#test)
+- [TODOs](#todos)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 # Introduce
 GoMark is a tool for system status monitoring and it implements some variables exactly like bvar in brpc, but using go instead of c++.
 
