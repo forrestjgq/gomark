@@ -27,15 +27,15 @@ var server *httpServer
 
 func init() {
 	server = &httpServer{}
-}
-
-func Start(port int) {
 	var err error
-	server.port = port
 	server.template, err = template.New("bvar").Parse(htmlContent)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func Start(port int) {
+	server.port = port
 
 	r := mux.NewRouter()
 	r.HandleFunc("/vars/js/{script}", procJs)
