@@ -25,9 +25,13 @@ type httpServer struct {
 
 var server *httpServer
 
+func init() {
+	server = &httpServer{}
+}
+
 func Start(port int) {
 	var err error
-	server = &httpServer{port: port}
+	server.port = port
 	server.template, err = template.New("bvar").Parse(htmlContent)
 	if err != nil {
 		panic(err)
