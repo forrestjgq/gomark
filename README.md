@@ -24,7 +24,7 @@ GoMark requires the following routers:
 	r.HandleFunc("/vars/{var}", procVar) // Route: vars
 	r.HandleFunc("/vars/debug", procDebug) // Route: debug
 ```
-Here `{xxx}` indicate a path variable, like`/vars/test_adder` or `/vars/*adder*`.
+Here `{xxx}` indicates a path variable, like`/vars/test_adder` or `/vars/*adder*`.
 
 Note that each router may require additional path parameters in form `?a=b` or `?a`, like `/vars/test_adder?dataonly`, here `dataonly` is a parameter, or `/vars/debug?p=1`, here `p` is a parameter.
 
@@ -38,7 +38,9 @@ type Request struct {
 ```
 You need fill them from HTTP request.
 
-You may note that no URL is required here, that's because `Router` defines a string to represent above routes, see comments.
+Note that for path variable, you need use word inside `{}` in route definition above as key in `Request.Params`.
+
+You may note that no URL is required here, that's because `Router` defines a string to represent above routes, see comments after each definition.
 
 Like `gmi.Request`, `gmi.Response` defines all information you need to write into HTTP response, make sure you write them all.
 ```go
@@ -50,6 +52,11 @@ type Response struct {
 ```
 #### Call GoMark on receiving HTTP requests
 In your routing handler, you need convert HTTP request to `gmi.Request` and call `gomark.Request`, and write returned `gmi.Response` to HTTP response.
+
+#### Examples
+1. `/vars/js/jquery_min` should deliver params: `{"script": "jquery_min"}`, route: `"js"`, here `script` comes from path variable definition in route.
+2. `/vars/debug?p=1` should deliver params:  `{"p": "1"}`, route: `"debug"`. DO NOT add parameter `{"var": "debug"}`.
+3. `/vars/*latency*,*add*?dataonly&v=1` should deliver params:  `{"var": "*latency*,*add*", "dataonly":"", "v": "1"}`, route: `"var"`. Note here `dataonly` takes no value and SHOULD NOT be ignored, and `var` as key comes from path variable definition in route.
 
 ## Variable Create
 A variable is an entity that maintains all information of statistics. There are several variables, and can be created by:
@@ -74,6 +81,21 @@ type Marker interface {
 ```
 
 Call `Mark` to send a marking point to variable and `Cancel` to stop using(and never use it).
+### Latency
+If you need to use latency recorder and use millisecond as time unit, you may be interested in `gmi.Latency`. It record a start point of time on creation, and calculate milliseconds since creation on marking. Here is how to use:
+```go
+// create a latency recorder
+lr = gomark.NewLatencyRecorder("test")
+
+// at start point, create a latency with latency recorder
+latency = gomark.NewLatency(lr)
+// at end point, call Latency.Mark()
+latency.Mark()
+// Now latency will calculate duration between start point and end point in millisecond
+// and call latency recorder to mark
+
+```
+
 
 # Working with C/CPP
 gomark is designed to work on GO. But it also provide an adapter to work with C/CPP.
