@@ -20,7 +20,7 @@ func gmCreate(typ int, name *C.char) C.int {
 	case C.VAR_ADDER:
 		m = gomark.NewAdder(C.GoString(name))
 	case C.VAR_MAXER:
-		m = gomark.NewAdder(C.GoString(name))
+		m = gomark.NewMaxer(C.GoString(name))
 	case C.VAR_STATUS:
 		m = gomark.NewStatus(C.GoString(name))
 	case C.VAR_PERSECOND_ADDER:
