@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 
 	"github.com/forrestjgq/gomark/gmi"
@@ -42,6 +43,7 @@ func Start(port int) {
 	r.HandleFunc("/vars", procVar)
 	r.HandleFunc("/vars/{var}", procVar)
 	r.HandleFunc("/vars/debug", procDebug)
+	r.HandleFunc("/metrics", procMetrics)
 	server.r = r
 
 	go func() {
@@ -65,6 +67,9 @@ func RequestHTTP(req *gmi.Request) *gmi.Response {
 	}
 }
 
+func procMetrics(w http.ResponseWriter, r *http.Request) {
+	proc(gmi.RouteMetrics, w, r)
+}
 func procDebug(w http.ResponseWriter, r *http.Request) {
 	proc(gmi.RouteDebug, w, r)
 }
@@ -127,7 +132,7 @@ func useHtml(req *gmi.Request) bool {
 	v = req.GetHeader("user-agent")
 	if len(v) == 0 {
 		return false
-	} else if strings.Index(v, "curl/") < 0 {
+	} else if !strings.Contains(v, "curl/") {
 		return true
 	}
 
@@ -180,6 +185,222 @@ func (d *dumpImpl) Dump(name, desc string) bool {
 	return true
 }
 
+var metricsLock sync.Mutex
+
+type writer bytes.Buffer
+
+func (w *writer) write(strs ...string) *writer {
+	b := (*bytes.Buffer)(w)
+	for _, s := range strs {
+		b.WriteString(s)
+	}
+	return w
+}
+
+// labels
+type nv struct {
+	name, value string
+}
+
+type labels struct {
+	isDg       bool
+	hasLabel   bool
+	l          []nv
+	metricName string
+	typ        string
+}
+
+func (lb *labels) isComplete() bool {
+	return len(lb.metricName) > 0
+}
+
+var dgItems = make(map[string]*labels)
+
+// summary is now not implemented
+
+// summary
+//const (
+//	NrPercentiles = 6
+//)
+//
+//type summary struct {
+//	latencyPercentiles            [NrPercentiles]string
+//	latencyAvg, count, metricName string
+//}
+//
+//func (s *summary) isComplete() bool {
+//	return len(s.metricName) > 0
+//}
+
+// dumper
+type metricsDump struct {
+	b        writer
+	lastName string
+}
+
+func (m *metricsDump) Dump(name, desc string) bool {
+	if len(desc) > 0 && desc[0] == '"' {
+		// there is no necessary to monitor string in prometheus
+		return true
+	}
+
+	if m.dumpLabels(name, desc) {
+		return true
+	}
+	if m.dumpLatencyRecorderSuffix(name, desc) {
+		// Has encountered name with suffix exposed by LatencyRecorder,
+		// Leave it to dumpLatencyRecorderSuffix to output Summary.
+		return true
+	}
+
+	m.b.write("# HELP ", name, "\n").
+		write("# TYPE ", name, " gauge\n").
+		write(name, " ", desc, "\n")
+	return true
+}
+
+func (m *metricsDump) dumpLabels(name string, desc string) bool {
+	metricsLock.Lock()
+	defer metricsLock.Unlock()
+
+	si := m.parseLabel(name)
+	//glog.Errorf("parsed label %+v", si)
+	if si == nil || !si.isDg || !si.isComplete() {
+		return false
+	}
+
+	//glog.Errorf("last %s, current %s", m.lastName, si.metricName)
+	if m.lastName != si.metricName {
+		m.lastName = si.metricName
+		m.b.write("# HELP ", si.metricName, "\n").
+			write("# TYPE ", si.metricName, " ", si.typ, "\n")
+	}
+
+	if si.hasLabel {
+		m.b.write(si.metricName, "{")
+		for i, v := range si.l {
+			if i > 0 {
+				m.b.write(",")
+			}
+			m.b.write(v.name, "=\"", v.value, "\"")
+		}
+		m.b.write("} ", desc, "\n")
+	} else {
+		m.b.write(si.metricName, " ", desc, "\n")
+	}
+
+	return true
+}
+
+func (m *metricsDump) dumpLatencyRecorderSuffix(name string, desc string) bool {
+	// reserved for system vars
+	return false
+}
+
+func (m *metricsDump) valueOf(name string) (metric, typ string) {
+	end := strings.Index(name, "_")
+	if end < 0 {
+		metric = name
+		return
+	}
+	metric = name[end+1:]
+	typ = name[0:end]
+	return
+}
+func (m *metricsDump) parseLabel(name string) *labels {
+	//glog.Errorf("parse label %s", name)
+	if si, ok := dgItems[name]; ok {
+		return si
+	}
+	if !strings.HasPrefix(name, "t_") {
+		return nil
+	}
+
+	item := &labels{
+		isDg:       true,
+		hasLabel:   false,
+		l:          nil,
+		metricName: "",
+		typ:        "",
+	}
+	dgItems[name] = item
+
+	metric := name[2:]
+
+	metric, item.typ = m.valueOf(metric)
+	if item.typ == "latency" {
+		switch {
+		case strings.HasSuffix(metric, "count"):
+			item.typ = "counter"
+		case strings.HasSuffix(metric, "max_latency") || strings.HasSuffix(metric, "qps"):
+			item.typ = "gauge"
+		case strings.HasSuffix(metric, "latency"):
+			item.typ = "histogram"
+			item.hasLabel = true
+			item.l = append(item.l, nv{
+				name:  "quantile",
+				value: "0",
+			})
+		case strings.HasSuffix(metric, "latency_80"):
+			metric = metric[:len(metric)-3]
+			item.typ = "histogram"
+			item.hasLabel = true
+			item.l = append(item.l, nv{
+				name:  "quantile",
+				value: "80",
+			})
+		case strings.HasSuffix(metric, "latency_90"):
+			metric = metric[:len(metric)-3]
+			item.typ = "histogram"
+			item.hasLabel = true
+			item.l = append(item.l, nv{
+				name:  "quantile",
+				value: "90",
+			})
+		case strings.HasSuffix(metric, "latency_99"):
+			metric = metric[:len(metric)-3]
+			item.typ = "histogram"
+			item.hasLabel = true
+			item.l = append(item.l, nv{
+				name:  "quantile",
+				value: "99",
+			})
+		case strings.HasSuffix(metric, "latency_999"):
+			metric = metric[:len(metric)-4]
+			item.typ = "histogram"
+			item.hasLabel = true
+			item.l = append(item.l, nv{
+				name:  "quantile",
+				value: "999",
+			})
+		case strings.HasSuffix(metric, "latency_9999"):
+			metric = metric[:len(metric)-5]
+			item.typ = "histogram"
+			item.hasLabel = true
+			item.l = append(item.l, nv{
+				name:  "quantile",
+				value: "9999",
+			})
+		}
+	}
+
+	if strings.HasPrefix(metric, "l_") {
+		metric = metric[2:]
+		item.hasLabel = true
+		var n, v string
+		metric, n = m.valueOf(metric)
+		metric, v = m.valueOf(metric)
+		item.l = append(item.l, nv{
+			name:  n,
+			value: v,
+		})
+	}
+
+	item.metricName = metric
+
+	return item
+}
+
 func procVar(w http.ResponseWriter, r *http.Request) {
 	proc(gmi.RouteVars, w, r)
 }
@@ -215,6 +436,8 @@ func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 		rsp = serveDebug(req)
 	case gmi.RouteJs:
 		rsp = serveJs(req)
+	case gmi.RouteMetrics:
+		rsp = serveMetrics(req)
 	default:
 		w.WriteHeader(404)
 		return
@@ -226,6 +449,25 @@ func proc(route gmi.Route, w http.ResponseWriter, r *http.Request) {
 	if len(rsp.Body) > 0 {
 		_, _ = w.Write(rsp.Body)
 	}
+}
+
+func serveMetrics(req *gmi.Request) (rsp *gmi.Response) {
+	rsp = &gmi.Response{
+		Status: 200,
+	}
+	rsp.SetHeader("Content-Type", "text/plain")
+
+	dump := &metricsDump{}
+	n, err := gm.Dump(dump, nil)
+	if err != nil {
+		rsp.Body = []byte(err.Error())
+	} else if n <= 0 {
+		rsp.Body = []byte("Fail to dump metrics")
+	} else {
+		b := (*bytes.Buffer)(&dump.b)
+		rsp.Body = b.Bytes()
+	}
+	return
 }
 func serveVar(req *gmi.Request) (rsp *gmi.Response) {
 	rsp = &gmi.Response{

@@ -13,9 +13,10 @@ type Marker interface {
 type Route string
 
 const (
-	RouteVars  Route = "vars"
-	RouteDebug Route = "debug"
-	RouteJs    Route = "js"
+	RouteVars    Route = "vars"
+	RouteDebug   Route = "debug"
+	RouteJs      Route = "js"
+	RouteMetrics Route = "metrics"
 )
 
 type Request struct {
@@ -61,6 +62,7 @@ type Response struct {
 	headers map[string]string
 	Body    []byte
 }
+
 func (r *Response) SetHeader(key, value string) {
 	if r.headers == nil {
 		r.headers = make(map[string]string)

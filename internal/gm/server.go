@@ -170,6 +170,15 @@ func (s *server) describeSeries(name string, w io.StringWriter, option *SeriesOp
 
 }
 func (s *server) dump(dumper Dumper, option *DumpOption) (int, error) {
+	if option == nil {
+		option = &DumpOption{
+			QuoteString:    true,
+			QuestionMark:   '?',
+			DisplayFilter:  DisplayOnPlainText,
+			WhiteWildcards: "",
+			BlackWildcards: "",
+		}
+	}
 	black := util.NewWildcardMatcher(option.BlackWildcards, option.QuestionMark, false)
 	white := util.NewWildcardMatcher(option.WhiteWildcards, option.QuestionMark, true)
 
