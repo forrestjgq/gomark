@@ -60,6 +60,8 @@ func RequestHTTP(req *gmi.Request) *gmi.Response {
 		return serveDebug(req)
 	case gmi.RouteVars:
 		return serveVar(req)
+	case gmi.RouteMetrics:
+		return serveMetrics(req)
 	default:
 		return &gmi.Response{
 			Status: 404,
