@@ -19,6 +19,7 @@ import (
 	"github.com/forrestjgq/gomark/gmi"
 	"github.com/forrestjgq/gomark/internal/gm"
 	"github.com/forrestjgq/gomark/internal/httpsrv"
+	"github.com/golang/glog"
 )
 
 // StartHTTPServer will create an http server for gomark.
@@ -43,6 +44,8 @@ func NewLatencyRecorder(name string) gmi.Marker {
 		lr, err := gm.NewLatencyRecorder(name)
 		if err == nil {
 			ret = lr.VarBase().Marker()
+		} else {
+			glog.Errorf("create latency recorder(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -55,6 +58,8 @@ func NewAdder(name string) gmi.Marker {
 		add, err := gm.NewAdder(name)
 		if err == nil {
 			ret = add.VarBase().Marker()
+		} else {
+			glog.Errorf("create adder(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -65,6 +70,8 @@ func NewAdderPerSecond(name string) gmi.Marker {
 		add, err := gm.NewAdderPersecond(name)
 		if err == nil {
 			ret = add.VarBase().Marker()
+		} else {
+			glog.Errorf("create adder per second(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -75,6 +82,8 @@ func NewStatus(name string) gmi.Marker {
 		add, err := gm.NewStatus(name)
 		if err == nil {
 			ret = add.VarBase().Marker()
+		} else {
+			glog.Errorf("create status(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -88,6 +97,8 @@ func NewCounter(name string) gmi.Marker {
 		c, err := gm.NewCounterWithName(name)
 		if err == nil {
 			ret = c.VarBase().Marker()
+		} else {
+			glog.Errorf("create counter(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -100,6 +111,8 @@ func NewQPS(name string) gmi.Marker {
 		q, err := gm.NewQPS(name)
 		if err == nil {
 			ret = q.VarBase().Marker()
+		} else {
+			glog.Errorf("create qps(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -112,6 +125,8 @@ func NewMaxer(name string) gmi.Marker {
 		w, err := gm.NewMaxer(name)
 		if err == nil {
 			ret = w.VarBase().Marker()
+		} else {
+			glog.Errorf("create maxer(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
@@ -124,6 +139,8 @@ func NewWindowMaxer(name string) gmi.Marker {
 		w, err := gm.NewWindowMaxer(name)
 		if err == nil {
 			ret = w.VarBase().Marker()
+		} else {
+			glog.Errorf("create windown maxer(%s) fails, err: %v", name, err)
 		}
 	})
 	return ret
