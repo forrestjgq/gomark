@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 
 	fr "github.com/valyala/fastrand"
 )

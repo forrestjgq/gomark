@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 type Value struct {

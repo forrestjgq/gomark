@@ -13,7 +13,7 @@ import (
 
 	"github.com/forrestjgq/gomark"
 	"github.com/forrestjgq/gomark/internal/gm"
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 var mode = ""

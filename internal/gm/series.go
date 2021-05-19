@@ -5,7 +5,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 const (

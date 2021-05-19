@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/forrestjgq/gomark/gmi"
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 // Latency provide a convenient way to record a single latency.

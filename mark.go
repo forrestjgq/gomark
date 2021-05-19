@@ -19,7 +19,7 @@ import (
 	"github.com/forrestjgq/gomark/gmi"
 	"github.com/forrestjgq/gomark/internal/gm"
 	"github.com/forrestjgq/gomark/internal/httpsrv"
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 // StartHTTPServer will create an http server for gomark.

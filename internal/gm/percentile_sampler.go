@@ -3,7 +3,7 @@ package gm
 import (
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 type PercentileOperator func(left, right *PercentileSamples)

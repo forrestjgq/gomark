@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 type SeriesFrequency int

@@ -11,7 +11,7 @@ import (
 
 	"github.com/forrestjgq/gomark/gmi"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 
 	"github.com/forrestjgq/gomark/internal/gm"
 

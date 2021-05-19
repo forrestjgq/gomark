@@ -11,7 +11,7 @@ import (
 	"unicode"
 
 	"github.com/forrestjgq/gomark/internal/util"
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 const (

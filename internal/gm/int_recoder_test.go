@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/forrestjgq/glog"
 )
 
 func TestIntRecorder_Sanity(t *testing.T) {
