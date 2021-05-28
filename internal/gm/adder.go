@@ -89,7 +89,7 @@ func NewAdder(name string) (*Adder, error) {
 
 	if len(name) > 0 {
 		var err error
-		adder.vb, err = Expose(name, "adder", DisplayOnAll, adder)
+		adder.vb, err = Expose("", name, DisplayOnAll, adder)
 		if err != nil {
 			return nil, err
 		}
