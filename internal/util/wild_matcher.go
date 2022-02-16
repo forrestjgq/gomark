@@ -63,44 +63,45 @@ func wildcmp(wild string, str string, questionMark byte) bool {
 	)
 
 	i := 0
-	for i < len(str) && wild[i] != '*' {
+	for i < len(str) && i < len(wild) && wild[i] != '*' {
 		if wild[i] != str[i] && wild[i] != questionMark {
 			return false
 		}
 		i++
 	}
 
-	j := i
-	for i < len(str) {
-		s := str[i]
-		w := wild[j]
+	wild = wild[i:]
+	str = str[i:]
+	for len(str) > 0 {
+		s := str[0]
+		w := uint8(0)
+		if len(wild) > 0 {
+			w = wild[0]
+		}
 		if w == '*' {
-			j++
-			if j == len(wild) {
+			wild = wild[1:]
+			if len(wild) == 0 {
 				return true
 			}
-			mp = wild[j:]
-			cp = str[i+1:]
+			mp = wild
+			cp = str[1:]
 		} else if w == s || w == questionMark {
-			i++
-			j++
+			str = str[1:]
+			wild = wild[1:]
 		} else {
 			wild = mp
-			j = 0
-
 			str = cp
 			if len(cp) > 0 {
 				cp = cp[1:]
 			}
-			i = 0
 		}
 	}
 
-	for j < len(wild) && wild[j] == '*' {
-		j++
+	for len(wild) > 0 && wild[0] == '*' {
+		wild = wild[1:]
 	}
 
-	return j >= len(wild)
+	return len(wild) == 0
 }
 func (w *WildcardMatcher) Wildcards() []string {
 	return w.wcs
