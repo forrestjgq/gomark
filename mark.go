@@ -16,10 +16,10 @@
 package gomark
 
 import (
+	"github.com/forrestjgq/glog"
 	"github.com/forrestjgq/gomark/gmi"
 	"github.com/forrestjgq/gomark/internal/gm"
 	"github.com/forrestjgq/gomark/internal/httpsrv"
-	"github.com/forrestjgq/glog"
 )
 
 // StartHTTPServer will create an http server for gomark.
@@ -35,6 +35,16 @@ func StartHTTPServer(port int) {
 // server based on mux, and it will call the same API as this calls.
 func Request(req *gmi.Request) *gmi.Response {
 	return httpsrv.RequestHTTP(req)
+}
+
+// EnableServer will make server accept all marks
+func EnableServer() {
+	gm.EnableServer()
+}
+
+// DisableServer will make server reject all marks
+func DisableServer() {
+	gm.DisableServer()
 }
 
 // NewLatencyRecorder create a latency recorder.
