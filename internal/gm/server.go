@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/forrestjgq/gomark/internal/util"
 	"github.com/forrestjgq/glog"
+	"github.com/forrestjgq/gomark/internal/util"
 )
 
 const (
@@ -28,6 +28,7 @@ type sampler interface {
 type disposer func()
 
 type server struct {
+	disabled bool // set to true to disable all marks
 	seq      Identity
 	smp      Identity
 	stubc    chan stub
@@ -48,6 +49,7 @@ var srv *server
 
 func init() {
 	srv = &server{
+		disabled: false,
 		stubc:    make(chan stub, sizeOfQ),
 		callc:    make(chan func()),
 		all:      make(map[Identity]Variable),
@@ -325,8 +327,22 @@ func Dump(dumper Dumper, option *DumpOption) (int, error) {
 	return ret, err
 }
 
+func EnableServer() {
+	srv.disabled = false
+}
+
+func DisableServer() {
+	srv.disabled = true
+}
+
+func ServerEnabled() bool {
+	return srv.disabled
+}
+
 func PushStub(s stub) {
-	srv.stubc <- s
+	if !srv.disabled && len(srv.stubc) < sizeOfQ-1 {
+		srv.stubc <- s
+	}
 }
 
 func AddSampler(s sampler) disposer {
