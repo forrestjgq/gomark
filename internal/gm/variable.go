@@ -54,11 +54,15 @@ func (vb *VarBase) EnablePerf() {
 func (vb *VarBase) Marker() gmi.Marker {
 	return vb.id
 }
-func (vb *VarBase) Mark(n int32) {
+func (vb *VarBase) ForceMark(n int32, force bool) bool {
 	if vb != nil && vb.Valid() {
 		s := makeStub(vb.ID(), Mark(n))
-		PushStub(s)
+		return PushStub(s, force)
 	}
+	return false
+}
+func (vb *VarBase) Mark(n int32) bool {
+	return vb.ForceMark(n, false)
 }
 
 func (vb *VarBase) Cancel() {

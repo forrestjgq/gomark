@@ -339,10 +339,12 @@ func ServerEnabled() bool {
 	return srv.disabled
 }
 
-func PushStub(s stub) {
-	if !srv.disabled && len(srv.stubc) < sizeOfQ-1 {
+func PushStub(s stub, force bool) bool {
+	if !srv.disabled && (force || len(srv.stubc) < sizeOfQ-1) {
 		srv.stubc <- s
+		return true
 	}
+	return false
 }
 
 func AddSampler(s sampler) disposer {

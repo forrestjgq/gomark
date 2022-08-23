@@ -5,9 +5,14 @@ import "net/textproto"
 
 // Marker is an interface to provide variable marking.
 type Marker interface {
+	// ForceMark allows caller to set up a force flag, if force is false, the mark could be abandon,
+	// otherwise gomark should mark it as possible as it could
+	// return value indicates if mark is abandoned
+	ForceMark(n int32, force bool) bool
 	// Mark a number, the number definition is bound to marker itself.
-	Mark(n int32)
-	// Stop this marking.
+	// return value indicates if mark is abandoned
+	Mark(n int32) bool
+	// Cancel stops this marking.
 	Cancel()
 }
 type Route string

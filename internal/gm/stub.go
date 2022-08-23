@@ -2,11 +2,16 @@ package gm
 
 type Identity uint32
 
-func (i Identity) Mark(n int32) {
+func (i Identity) ForceMark(n int32, force bool) bool {
 	if i != 0 {
 		s := makeStub(i, Mark(n))
-		PushStub(s)
+		return PushStub(s, force)
 	}
+	return false
+
+}
+func (i Identity) Mark(n int32) bool {
+	return i.ForceMark(n, false)
 }
 
 func (i Identity) Cancel() {
